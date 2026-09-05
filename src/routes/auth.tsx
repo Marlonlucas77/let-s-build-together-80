@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { validEmail } from "@/lib/format";
 
 export const Route = createFileRoute("/auth")({
@@ -29,7 +28,6 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [nome, setNome] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -39,8 +37,14 @@ function AuthPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!validEmail(email)) { toast.error("Informe um e-mail válido."); return; }
-    if (senha.length < 6) { toast.error("A senha deve ter ao menos 6 caracteres."); return; }
+    if (!validEmail(email)) {
+      toast.error("Informe um e-mail válido.");
+      return;
+    }
+    if (senha.length < 6) {
+      toast.error("A senha deve ter ao menos 6 caracteres.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
     setLoading(false);
@@ -54,33 +58,6 @@ function AuthPage() {
     }
     toast.success("Bem-vindo!");
     navigate({ to: "/dashboard", replace: true });
-  }
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
-    if (nome.trim().length < 3) { toast.error("Informe seu nome completo."); return; }
-    if (!validEmail(email)) { toast.error("Informe um e-mail válido."); return; }
-    if (senha.length < 6) { toast.error("A senha deve ter ao menos 6 caracteres."); return; }
-    setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: senha,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: nome.trim() },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error("Não foi possível criar a conta. " + error.message);
-      return;
-    }
-    if (data.session) {
-      toast.success("Conta criada!");
-      navigate({ to: "/dashboard", replace: true });
-    } else {
-      toast.success("Conta criada. Confirme seu e-mail para acessar.");
-    }
   }
 
   return (
@@ -102,86 +79,37 @@ function AuthPage() {
             <CardDescription>Use seu e-mail corporativo e senha.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
-              <TabsList className="mb-4 grid w-full grid-cols-2">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Criar conta</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="voce@eqsan.com.br"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="senha">Senha</Label>
-                    <Input
-                      id="senha"
-                      type="password"
-                      autoComplete="current-password"
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Entrando..." : "Entrar"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome completo</Label>
-                    <Input
-                      id="nome"
-                      value={nome}
-                      onChange={(e) => setNome(e.target.value)}
-                      placeholder="Seu nome"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email2">E-mail</Label>
-                    <Input
-                      id="email2"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="senha2">Senha</Label>
-                    <Input
-                      id="senha2"
-                      type="password"
-                      autoComplete="new-password"
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Criando..." : "Criar conta"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    O primeiro usuário cadastrado recebe o perfil Administrador. Os demais entram
-                    como Comercial.
-                  </p>
-                </form>
-              </TabsContent>
-            </Tabs>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@eqsan.com.br"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="senha">Senha</Label>
+                <Input
+                  id="senha"
+                  type="password"
+                  autoComplete="current-password"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Entrando..." : "Entrar"}
+              </Button>
+            </form>
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              Não tem conta? Peça a um administrador para criar seu acesso.
+            </p>
           </CardContent>
         </Card>
       </div>

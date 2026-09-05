@@ -5,12 +5,15 @@ import {
   ArrowLeft,
   Copy,
   FileText,
+  GitCompare,
   Mail,
   MessageCircle,
+  Paperclip,
   Phone,
   Plus,
   Save,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,15 +39,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { QUOTE_STATUS, contactTypeLabel, quoteStatusLabel } from "@/lib/constants";
-import { brl, fmtDate, fmtDateTime, toInputDate, whatsappLink } from "@/lib/format";
+import { brl, fmtBytes, fmtDate, fmtDateTime, toInputDate, whatsappLink } from "@/lib/format";
 import {
+  ATTACHMENTS_BUCKET,
+  fetchProducts,
+  fetchQuoteAttachments,
   logActivity,
   recalcItem,
   type Client,
   type Contact,
   type FollowUp,
   type Quote,
+  type QuoteAttachment,
   type QuoteItem,
 } from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
@@ -53,7 +61,10 @@ export const Route = createFileRoute("/_authenticated/orcamentos/$id")({
   head: () => ({
     meta: [
       { title: "Orçamento | EQSAN Comercial" },
-      { name: "description", content: "Itens, valores, condições comerciais e follow-ups do orçamento." },
+      {
+        name: "description",
+        content: "Itens, valores, condições comerciais e follow-ups do orçamento.",
+      },
       { property: "og:title", content: "Orçamento | EQSAN Comercial" },
       { property: "og:description", content: "Edite itens e gere a proposta em PDF." },
       { property: "og:type", content: "website" },
@@ -82,11 +93,20 @@ function QuoteDetail() {
         .maybeSingle();
       const [items, fu, act] = await Promise.all([
         supabase.from("quote_items").select("*").eq("quote_id", id).order("ordem"),
-        supabase.from("follow_ups").select("*").eq("quote_id", id).order("data", { ascending: false }),
-        supabase.from("activities").select("*").eq("quote_id", id).order("created_at", { ascending: false }),
+        supabase
+          .from("follow_ups")
+          .select("*")
+          .eq("quote_id", id)
+          .order("data", { ascending: false }),
+        supabase
+          .from("activities")
+          .select("*")
+          .eq("quote_id", id)
+          .order("created_at", { ascending: false }),
       ]);
       return {
-        quote: quote as unknown as (Quote & { clients: Client | null; contacts: Contact | null }) | null,
+        quote: quote as unknown as
+          (Quote & { clients: Client | null; contacts: Contact | null }) | null,
         items: (items.data ?? []) as QuoteItem[],
         followups: (fu.data ?? []) as FollowUp[],
         activities: (act.data ?? []) as {
@@ -102,10 +122,74 @@ function QuoteDetail() {
   const quote = data?.quote;
   const items = data?.items ?? [];
 
-  async function recalcTotals() {
+  const { data: attachments = [] } = useQuery({
+    queryKey: ["quote-attachments", id],
+    queryFn: () => fetchQuoteAttachments(id),
+  });
+
+  const { data: catalog = [] } = useQuery({
+    queryKey: ["products", "active"],
+    queryFn: () => fetchProducts(true),
+  });
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
+
+  const uploadAttachment = useMutation({
+    mutationFn: async (file: File) => {
+      const path = `${id}/${crypto.randomUUID()}-${file.name}`;
+      const { error: upErr } = await supabase.storage.from(ATTACHMENTS_BUCKET).upload(path, file);
+      if (upErr) throw upErr;
+      const { error } = await supabase.from("quote_attachments").insert({
+        quote_id: id,
+        nome_arquivo: file.name,
+        caminho: path,
+        tamanho_bytes: file.size,
+        created_by: user?.id ?? null,
+      } as never);
+      if (error) throw error;
+      await logActivity({
+        quote_id: id,
+        opportunity_id: quote?.opportunity_id,
+        client_id: quote?.client_id,
+        tipo: "anexo",
+        descricao: `Anexou o arquivo "${file.name}".`,
+        usuario: userName(profile, user),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["quote-attachments", id] });
+      toast.success("Anexo enviado.");
+    },
+    onError: (e: Error) => toast.error("Erro ao enviar anexo: " + e.message),
+  });
+
+  const removeAttachment = useMutation({
+    mutationFn: async (att: QuoteAttachment) => {
+      await supabase.storage.from(ATTACHMENTS_BUCKET).remove([att.caminho]);
+      const { error } = await supabase.from("quote_attachments").delete().eq("id", att.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["quote-attachments", id] });
+      toast.success("Anexo removido.");
+    },
+  });
+
+  async function downloadAttachment(att: QuoteAttachment) {
+    const { data: signed, error } = await supabase.storage
+      .from(ATTACHMENTS_BUCKET)
+      .createSignedUrl(att.caminho, 60);
+    if (error || !signed) {
+      toast.error("Não foi possível gerar o link do anexo.");
+      return;
+    }
+    window.open(signed.signedUrl, "_blank", "noreferrer");
+  }
+
+  async function recalcTotals(descontoOverride?: number) {
     const { data: rows } = await supabase.from("quote_items").select("total").eq("quote_id", id);
     const subtotal = (rows ?? []).reduce((s, r) => s + Number(r.total), 0);
-    const desconto = Number(quote?.desconto ?? 0);
+    const desconto = Number(descontoOverride ?? quote?.desconto ?? 0);
     await supabase
       .from("quotes")
       .update({ subtotal, total: Math.max(0, subtotal - desconto) })
@@ -114,9 +198,14 @@ function QuoteDetail() {
 
   const saveQuote = useMutation({
     mutationFn: async (payload: Partial<Quote>) => {
-      const { error } = await supabase.from("quotes").update(payload as never).eq("id", id);
+      const { error } = await supabase
+        .from("quotes")
+        .update(payload as never)
+        .eq("id", id);
       if (error) throw error;
-      if (payload.desconto !== undefined) await recalcTotals();
+      // Usa o desconto recém-enviado (payload), não o valor antigo ainda em cache,
+      // senão o total é recalculado com o desconto anterior.
+      if (payload.desconto !== undefined) await recalcTotals(payload.desconto);
     },
     onSuccess: () => {
       qc.invalidateQueries();
@@ -248,6 +337,40 @@ function QuoteDetail() {
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareWith, setCompareWith] = useState<string | null>(null);
+
+  const { data: versions = [] } = useQuery({
+    queryKey: ["quote-versions", quote?.opportunity_id],
+    enabled: !!quote?.opportunity_id,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("quotes")
+        .select("id, numero, versao, total, subtotal, desconto, validade, status, created_at")
+        .eq("opportunity_id", quote!.opportunity_id as string)
+        .order("versao");
+      if (error) throw error;
+      return rows;
+    },
+  });
+
+  const { data: compareItems = [] } = useQuery({
+    queryKey: ["quote-items", compareWith],
+    enabled: !!compareWith,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("quote_items")
+        .select("*")
+        .eq("quote_id", compareWith!)
+        .order("ordem");
+      if (error) throw error;
+      return (rows ?? []) as QuoteItem[];
+    },
+  });
+
+  const outrasVersoes = versions.filter((v) => v.id !== id);
+  const versaoComparada = versions.find((v) => v.id === compareWith);
+
   const removeQuote = useMutation({
     mutationFn: async () => {
       await supabase.from("quote_items").delete().eq("quote_id", id);
@@ -263,7 +386,20 @@ function QuoteDetail() {
   if (!quote) return <p className="text-sm text-muted-foreground">Carregando orçamento...</p>;
 
   const zap = quote.contacts?.whatsapp || quote.clients?.whatsapp;
-  const mensagem = `Olá${quote.contacts?.nome ? `, ${quote.contacts.nome}` : ""}! Tudo bem?\n\nEstou entrando em contato referente ao orçamento ${quote.numero} enviado anteriormente.\nGostaria de saber se podemos avançar com a proposta.`;
+  const linkProposta = `${window.location.origin}/proposta/${id}`;
+  const mensagem = `Olá${quote.contacts?.nome ? `, ${quote.contacts.nome}` : ""}! Tudo bem?\n\nSegue o link da nossa proposta comercial ${quote.numero}: ${linkProposta}\n\nGostaria de saber se podemos avançar com a proposta.`;
+
+  function registrarEnvio(canal: "whatsapp" | "email") {
+    void logActivity({
+      quote_id: id,
+      opportunity_id: quote?.opportunity_id,
+      client_id: quote?.client_id,
+      tipo: "envio",
+      descricao:
+        canal === "whatsapp" ? "Proposta enviada por WhatsApp." : "Proposta enviada por e-mail.",
+      usuario: userName(profile, user),
+    });
+  }
 
   return (
     <div>
@@ -283,7 +419,7 @@ function QuoteDetail() {
               <Phone className="mr-2 h-4 w-4" /> Follow-up
             </Button>
             {zap ? (
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild onClick={() => registrarEnvio("whatsapp")}>
                 <a href={whatsappLink(zap, mensagem)} target="_blank" rel="noreferrer">
                   <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
                 </a>
@@ -295,7 +431,7 @@ function QuoteDetail() {
                 setMail({
                   to: quote.contacts?.email ?? quote.clients?.email ?? "",
                   subject: `Proposta comercial ${quote.numero} - EQSAN`,
-                  body: `Prezado(a) ${quote.contacts?.nome ?? "cliente"},\n\nSegue em anexo a proposta comercial ${quote.numero}, no valor de ${brl(quote.total)}, com validade até ${fmtDate(quote.validade)}.\n\nFico à disposição para esclarecimentos.\n\nAtenciosamente,\n${quote.responsavel ?? ""}`,
+                  body: `Prezado(a) ${quote.contacts?.nome ?? "cliente"},\n\nSegue a proposta comercial ${quote.numero}, no valor de ${brl(quote.total)}, com validade até ${fmtDate(quote.validade)}.\n\nVocê pode visualizar e imprimir a proposta neste link:\n${linkProposta}\n\nFico à disposição para esclarecimentos.\n\nAtenciosamente,\n${quote.responsavel ?? ""}`,
                 });
                 setMailOpen(true);
               }}
@@ -305,6 +441,11 @@ function QuoteDetail() {
             <Button variant="outline" onClick={() => duplicate.mutate()}>
               <Copy className="mr-2 h-4 w-4" /> Nova versão
             </Button>
+            {outrasVersoes.length ? (
+              <Button variant="outline" onClick={() => setCompareOpen(true)}>
+                <GitCompare className="mr-2 h-4 w-4" /> Comparar versões
+              </Button>
+            ) : null}
             <Button asChild>
               <Link to="/proposta/$id" params={{ id }} target="_blank">
                 <FileText className="mr-2 h-4 w-4" /> Gerar proposta PDF
@@ -326,13 +467,66 @@ function QuoteDetail() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
             <CardTitle className="text-base">Itens do orçamento</CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => saveItem.mutate({ descricao: "Novo item", quantidade: 1 })}
-            >
-              <Plus className="mr-1 h-4 w-4" /> Adicionar item
-            </Button>
+            <div className="flex gap-2">
+              <Popover open={catalogOpen} onOpenChange={setCatalogOpen}>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <FileText className="mr-1 h-4 w-4" /> Do catálogo
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-2" align="end">
+                  <Input
+                    autoFocus
+                    placeholder="Buscar produto/serviço..."
+                    className="mb-2 h-8 text-sm"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                  />
+                  <div className="max-h-64 space-y-1 overflow-y-auto">
+                    {catalog
+                      .filter((p) =>
+                        (p.codigo + " " + p.descricao)
+                          .toLowerCase()
+                          .includes(catalogSearch.toLowerCase()),
+                      )
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            saveItem.mutate({
+                              descricao: p.descricao,
+                              codigo: p.codigo,
+                              unidade: p.unidade,
+                              quantidade: 1,
+                              valor_unitario: p.preco_unitario,
+                            });
+                            setCatalogOpen(false);
+                            setCatalogSearch("");
+                          }}
+                          className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                        >
+                          <span className="font-medium">{p.descricao}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {p.unidade} · {brl(p.preco_unitario)}
+                          </span>
+                        </button>
+                      ))}
+                    {!catalog.length ? (
+                      <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+                        Catálogo vazio. Cadastre em Configurações.
+                      </p>
+                    ) : null}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => saveItem.mutate({ descricao: "Novo item", quantidade: 1 })}
+              >
+                <Plus className="mr-1 h-4 w-4" /> Adicionar item
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {items.map((it) => (
@@ -444,6 +638,62 @@ function QuoteDetail() {
               </p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Anexos</CardTitle>
+              <Button size="sm" variant="outline" asChild>
+                <label className="cursor-pointer">
+                  <Upload className="mr-1 h-4 w-4" /> Enviar
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadAttachment.mutate(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {attachments.length ? (
+                attachments.map((att) => (
+                  <div
+                    key={att.id}
+                    className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm"
+                  >
+                    <button
+                      onClick={() => downloadAttachment(att)}
+                      className="flex min-w-0 items-center gap-2 text-left hover:underline"
+                    >
+                      <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 truncate">{att.nome_arquivo}</span>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {fmtBytes(att.tamanho_bytes)}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (confirm("Remover este anexo?")) removeAttachment.mutate(att);
+                        }}
+                        aria-label="Remover anexo"
+                        className="rounded p-1 hover:bg-muted"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum anexo. Envie tabelas técnicas, fotos do local, etc.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -505,6 +755,56 @@ function QuoteDetail() {
         clientId={quote.client_id}
       />
 
+      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Comparar versões do orçamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={compareWith ?? ""} onValueChange={setCompareWith}>
+              <SelectTrigger>
+                <SelectValue placeholder="Escolha uma versão para comparar" />
+              </SelectTrigger>
+              <SelectContent>
+                {outrasVersoes.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    Versão {v.versao} · {v.numero}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {versaoComparada ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <VersionSummary
+                  label={`Versão ${quote.versao} (atual) · ${quote.numero}`}
+                  subtotal={quote.subtotal}
+                  desconto={quote.desconto}
+                  total={quote.total}
+                  validade={quote.validade}
+                  status={quote.status}
+                  items={items}
+                />
+                <VersionSummary
+                  label={`Versão ${versaoComparada.versao} · ${versaoComparada.numero}`}
+                  subtotal={versaoComparada.subtotal}
+                  desconto={versaoComparada.desconto}
+                  total={versaoComparada.total}
+                  validade={versaoComparada.validade}
+                  status={versaoComparada.status}
+                  items={compareItems}
+                />
+              </div>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCompareOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={mailOpen} onOpenChange={setMailOpen}>
         <DialogContent>
           <DialogHeader>
@@ -531,7 +831,8 @@ function QuoteDetail() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Gere o PDF da proposta e anexe no seu programa de e-mail antes de enviar.
+              O link da proposta já está incluso na mensagem. Se preferir, você também pode baixar o
+              PDF e anexar manualmente.
             </p>
           </div>
           <DialogFooter>
@@ -541,6 +842,7 @@ function QuoteDetail() {
             <Button
               onClick={() => {
                 window.location.href = `mailto:${mail.to}?subject=${encodeURIComponent(mail.subject)}&body=${encodeURIComponent(mail.body)}`;
+                registrarEnvio("email");
                 setMailOpen(false);
               }}
             >
@@ -613,13 +915,67 @@ function ItemRow({
       />
       <div className="flex items-center justify-between gap-2 sm:col-span-1">
         <span className="text-sm font-medium">{brl(total)}</span>
-        <button
-          onClick={onRemove}
-          aria-label="Remover item"
-          className="rounded p-1 hover:bg-muted"
-        >
+        <button onClick={onRemove} aria-label="Remover item" className="rounded p-1 hover:bg-muted">
           <Trash2 className="h-4 w-4 text-destructive" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+function VersionSummary({
+  label,
+  subtotal,
+  desconto,
+  total,
+  validade,
+  status,
+  items,
+}: {
+  label: string;
+  subtotal: number;
+  desconto: number;
+  total: number;
+  validade: string | null;
+  status: string;
+  items: QuoteItem[];
+}) {
+  return (
+    <div className="rounded-md border p-3 text-sm">
+      <p className="mb-2 font-semibold">{label}</p>
+      <div className="space-y-1 text-xs">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Status</span>
+          <span>{quoteStatusLabel(status)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Validade</span>
+          <span>{fmtDate(validade)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span>{brl(subtotal)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Desconto</span>
+          <span>{brl(desconto)}</span>
+        </div>
+        <div className="flex justify-between font-semibold">
+          <span>Total</span>
+          <span>{brl(total)}</span>
+        </div>
+      </div>
+      <div className="mt-3 space-y-1 border-t pt-2">
+        {items.length ? (
+          items.map((it) => (
+            <div key={it.id} className="flex justify-between gap-2 text-xs">
+              <span className="min-w-0 truncate">{it.descricao}</span>
+              <span className="shrink-0 text-muted-foreground">{brl(it.total)}</span>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-muted-foreground">Sem itens.</p>
+        )}
       </div>
     </div>
   );

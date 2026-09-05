@@ -26,7 +26,10 @@ export const Route = createFileRoute("/_authenticated/kanban")({
   head: () => ({
     meta: [
       { title: "Kanban comercial | EQSAN" },
-      { name: "description", content: "Visualize e arraste oportunidades entre as etapas do funil comercial." },
+      {
+        name: "description",
+        content: "Visualize e arraste oportunidades entre as etapas do funil comercial.",
+      },
       { property: "og:title", content: "Kanban comercial | EQSAN" },
       { property: "og:description", content: "Da solicitação ao fechamento em um só quadro." },
       { property: "og:type", content: "website" },
@@ -57,7 +60,15 @@ function KanbanPage() {
   });
 
   const move = useMutation({
-    mutationFn: async ({ id, status, clientId }: { id: string; status: string; clientId: string }) => {
+    mutationFn: async ({
+      id,
+      status,
+      clientId,
+    }: {
+      id: string;
+      status: string;
+      clientId: string;
+    }) => {
       const { error } = await supabase.from("opportunities").update({ status }).eq("id", id);
       if (error) throw error;
       await logActivity({
@@ -107,7 +118,10 @@ function KanbanPage() {
                 <p className="mb-3 text-xs text-muted-foreground">{brl(total)}</p>
                 <div className="space-y-2">
                   {list.map((c) => {
-                    const ultimo = c.follow_ups.map((f) => f.data).sort().at(-1);
+                    const ultimo = c.follow_ups
+                      .map((f) => f.data)
+                      .sort()
+                      .at(-1);
                     const proximo = c.follow_ups
                       .map((f) => f.proximo_followup)
                       .filter(Boolean)

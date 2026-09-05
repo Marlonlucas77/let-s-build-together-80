@@ -26,8 +26,16 @@ export const Route = createFileRoute("/")({
 const FEATURES = [
   { icon: Target, title: "Oportunidades", desc: "Da solicitação ao fechamento, com funil visual." },
   { icon: FileText, title: "Orçamentos", desc: "Itens, cálculos automáticos e proposta em PDF." },
-  { icon: PhoneCall, title: "Follow-ups", desc: "Alertas de atrasados, de hoje e dos próximos dias." },
-  { icon: BarChart3, title: "Indicadores", desc: "Conversão, valores em negociação e motivos de perda." },
+  {
+    icon: PhoneCall,
+    title: "Follow-ups",
+    desc: "Alertas de atrasados, de hoje e dos próximos dias.",
+  },
+  {
+    icon: BarChart3,
+    title: "Indicadores",
+    desc: "Conversão, valores em negociação e motivos de perda.",
+  },
 ];
 
 function Landing() {

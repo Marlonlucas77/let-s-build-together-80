@@ -12,9 +12,15 @@ export const Route = createFileRoute("/proposta/$id")({
   head: () => ({
     meta: [
       { title: "Proposta comercial | EQSAN" },
-      { name: "description", content: "Proposta comercial EQSAN pronta para visualizar, imprimir ou salvar em PDF." },
+      {
+        name: "description",
+        content: "Proposta comercial EQSAN pronta para visualizar, imprimir ou salvar em PDF.",
+      },
       { property: "og:title", content: "Proposta comercial | EQSAN" },
-      { property: "og:description", content: "Documento comercial com itens, valores e condições." },
+      {
+        property: "og:description",
+        content: "Documento comercial com itens, valores e condições.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -40,7 +46,8 @@ function ProposalPage() {
         .eq("quote_id", id)
         .order("ordem");
       return {
-        quote: quote as unknown as (Quote & { clients: Client | null; contacts: Contact | null }) | null,
+        quote: quote as unknown as
+          (Quote & { clients: Client | null; contacts: Contact | null }) | null,
         items: (items ?? []) as QuoteItem[],
       };
     },
@@ -84,7 +91,11 @@ function ProposalPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{empresa}</h1>
             <p className="text-xs text-slate-600">
-              {[settings?.empresa_cnpj && `CNPJ ${settings.empresa_cnpj}`, settings?.empresa_telefone, settings?.empresa_email]
+              {[
+                settings?.empresa_cnpj && `CNPJ ${settings.empresa_cnpj}`,
+                settings?.empresa_telefone,
+                settings?.empresa_email,
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

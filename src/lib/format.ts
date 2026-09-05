@@ -83,6 +83,13 @@ export function validEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
+export function fmtBytes(bytes: number | null | undefined) {
+  if (!bytes) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function onlyDigits(v: string | null | undefined) {
   return (v ?? "").replace(/\D/g, "");
 }
@@ -95,11 +102,7 @@ export function whatsappLink(phone: string | null | undefined, message: string) 
 
 export function csvDownload(filename: string, rows: (string | number)[][]) {
   const content = rows
-    .map((r) =>
-      r
-        .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-        .join(";"),
-    )
+    .map((r) => r.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(";"))
     .join("\n");
   const blob = new Blob(["\ufeff" + content], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

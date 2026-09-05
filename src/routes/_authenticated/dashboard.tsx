@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -18,6 +18,7 @@ import {
 import {
   AlertTriangle,
   ArrowRight,
+  CalendarClock,
   CheckCircle2,
   Clock,
   FileText,
@@ -27,19 +28,23 @@ import {
   TrendingUp,
   XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { brl } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { brl, fmtDateTime } from "@/lib/format";
 import { OPP_STATUS, QUOTE_STATUS, quoteStatusLabel } from "@/lib/constants";
-import { useAlerts } from "@/components/AlertsBell";
-import type { Opportunity, Quote } from "@/lib/api";
+import { fetchSalesGoals, type Opportunity, type Quote } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard Comercial | EQSAN" },
-      { name: "description", content: "Indicadores comerciais, funil de vendas e valores em negociação da EQSAN." },
+      {
+        name: "description",
+        content: "Indicadores comerciais, funil de vendas e valores em negociação da EQSAN.",
+      },
       { property: "og:title", content: "Dashboard Comercial | EQSAN" },
       { property: "og:description", content: "Indicadores comerciais em tempo real." },
       { property: "og:type", content: "website" },
@@ -92,7 +97,7 @@ function Kpi({
 }
 
 function Dashboard() {
-  const { data: alerts } = useAlerts();
+  const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
@@ -108,6 +113,65 @@ function Dashboard() {
         quotes: (quotes.data ?? []) as Quote[],
       };
     },
+  });
+
+  type AgendaRow = {
+    id: string;
+    tipo: string;
+    observacao: string | null;
+    proximo_followup: string | null;
+    opportunity_id: string | null;
+    clients: { razao_social: string } | null;
+    opportunities: { titulo: string } | null;
+  };
+
+  const { data: agenda = [] } = useQuery({
+    queryKey: ["dashboard-agenda"],
+    queryFn: async () => {
+      const now = new Date();
+      const endOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+      ).toISOString();
+      const { data: rows, error } = await supabase
+        .from("follow_ups")
+        .select(
+          "id, tipo, observacao, proximo_followup, opportunity_id, clients(razao_social), opportunities(titulo)",
+        )
+        .eq("status", "pendente")
+        .not("proximo_followup", "is", null)
+        .lte("proximo_followup", endOfToday)
+        .order("proximo_followup")
+        .limit(8);
+      if (error) throw error;
+      return rows as unknown as AgendaRow[];
+    },
+  });
+
+  const concludeFollowUp = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("follow_ups")
+        .update({ status: "realizado" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries();
+      toast.success("Follow-up concluído.");
+    },
+  });
+
+  const now = new Date();
+  const anoAtual = now.getFullYear();
+  const mesAtual = now.getMonth() + 1;
+  const { data: goals = [] } = useQuery({
+    queryKey: ["sales-goals", anoAtual, mesAtual],
+    queryFn: () => fetchSalesGoals(anoAtual, mesAtual),
   });
 
   const opps = data?.opportunities ?? [];
@@ -173,41 +237,29 @@ function Dashboard() {
     return [...map.entries()].map(([name, value]) => ({ name, value }));
   })();
 
+  const mesAtualKey = `${anoAtual}-${String(mesAtual).padStart(2, "0")}`;
+  const vendidoPorResponsavel = (() => {
+    const map = new Map<string, number>();
+    for (const q of quotes) {
+      if (q.status !== "aprovado" || q.data.slice(0, 7) !== mesAtualKey) continue;
+      const k = q.responsavel || "Sem responsável";
+      map.set(k, (map.get(k) ?? 0) + Number(q.total));
+    }
+    return map;
+  })();
+  const metas = goals
+    .map((g) => ({
+      responsavel: g.responsavel,
+      meta: Number(g.meta_valor),
+      vendido: vendidoPorResponsavel.get(g.responsavel) ?? 0,
+    }))
+    .sort((a, b) => b.meta - a.meta);
+  const metaTotal = metas.reduce((s, m) => s + m.meta, 0);
+  const vendidoTotal = metas.reduce((s, m) => s + m.vendido, 0);
+
   return (
     <div>
-      <PageHeader
-        title="Dashboard"
-        subtitle="Visão geral do desempenho comercial da EQSAN"
-      />
-
-      {(alerts?.atrasados ?? 0) > 0 || (alerts?.hoje ?? 0) > 0 ? (
-        <div className="mb-6 grid gap-3 sm:grid-cols-2">
-          {(alerts?.atrasados ?? 0) > 0 ? (
-            <Link
-              to="/followups"
-              className="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-900"
-            >
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <AlertTriangle className="h-4 w-4" />
-                Você possui {alerts?.atrasados} follow-ups atrasados.
-              </span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          ) : null}
-          {(alerts?.hoje ?? 0) > 0 ? (
-            <Link
-              to="/followups"
-              className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900"
-            >
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <Clock className="h-4 w-4" />
-                Você possui {alerts?.hoje} follow-ups para hoje.
-              </span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
+      <PageHeader title="Dashboard" subtitle="Visão geral do desempenho comercial da EQSAN" />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi title="Oportunidades abertas" value={abertas} icon={Target} />
@@ -225,12 +277,104 @@ function Dashboard() {
         <Kpi title="Aprovados" value={countBy("aprovada")} icon={CheckCircle2} tone="success" />
         <Kpi title="Perdidos" value={countBy("perdida")} icon={XCircle} tone="danger" />
         <Kpi title="Valor em negociação" value={brl(valorNegociacao)} icon={TrendingUp} />
-        <Kpi
-          title="Valor aprovado"
-          value={brl(valorAprovado)}
-          icon={CheckCircle2}
-          tone="success"
-        />
+        <Kpi title="Valor aprovado" value={brl(valorAprovado)} icon={CheckCircle2} tone="success" />
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base">Sua agenda do dia</CardTitle>
+            <Link
+              to="/followups"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Ver todos <ArrowRight className="h-3 w-3" />
+            </Link>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {agenda.length ? (
+              agenda.map((f) => {
+                const atrasado = f.proximo_followup ? new Date(f.proximo_followup) < now : false;
+                return (
+                  <div
+                    key={f.id}
+                    className={
+                      "flex items-center justify-between gap-3 rounded-md border p-3 text-sm " +
+                      (atrasado ? "border-rose-200 bg-rose-50" : "border-amber-200 bg-amber-50")
+                    }
+                  >
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1.5 font-medium">
+                        {atrasado ? (
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600" />
+                        ) : (
+                          <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                        )}
+                        <span className="truncate">
+                          {f.clients?.razao_social ?? f.opportunities?.titulo ?? "Follow-up"}
+                        </span>
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {fmtDateTime(f.proximo_followup)}
+                        {f.observacao ? ` · ${f.observacao}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {f.opportunity_id ? (
+                        <Link
+                          to="/oportunidades/$id"
+                          params={{ id: f.opportunity_id }}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Abrir
+                        </Link>
+                      ) : null}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => concludeFollowUp.mutate(f.id)}
+                      >
+                        <CheckCircle2 className="mr-1 h-3 w-3" /> Concluir
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="flex items-center gap-2 py-6 text-center text-sm text-muted-foreground">
+                <CalendarClock className="h-4 w-4" /> Nenhum follow-up atrasado ou para hoje. 🎉
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Metas do mês</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {metas.length ? (
+              <>
+                <GoalBar label="Equipe" meta={metaTotal} vendido={vendidoTotal} highlight />
+                <div className="space-y-3 border-t pt-3">
+                  {metas.map((m) => (
+                    <GoalBar
+                      key={m.responsavel}
+                      label={m.responsavel}
+                      meta={m.meta}
+                      vendido={m.vendido}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nenhuma meta cadastrada para este mês. Defina em Configurações.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -259,7 +403,14 @@ function Dashboard() {
             {porStatus.length ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={porStatus} dataKey="value" nameKey="name" outerRadius={90} label isAnimationActive={false}>
+                  <Pie
+                    data={porStatus}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={90}
+                    label
+                    isAnimationActive={false}
+                  >
                     {porStatus.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
@@ -286,8 +437,20 @@ function Dashboard() {
                 <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} />
                 <Tooltip formatter={(v) => brl(Number(v))} />
                 <Legend />
-                <Line type="monotone" dataKey="orcado" name="Orçado" stroke="#2563eb" strokeWidth={2} />
-                <Line type="monotone" dataKey="vendido" name="Aprovado" stroke="#16a34a" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="orcado"
+                  name="Orçado"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="vendido"
+                  name="Aprovado"
+                  stroke="#16a34a"
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -353,6 +516,39 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function GoalBar({
+  label,
+  meta,
+  vendido,
+  highlight = false,
+}: {
+  label: string;
+  meta: number;
+  vendido: number;
+  highlight?: boolean;
+}) {
+  const pct = meta > 0 ? Math.min(100, Math.round((vendido / meta) * 100)) : 0;
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-sm">
+        <span className={highlight ? "font-semibold" : "text-muted-foreground"}>{label}</span>
+        <span className={highlight ? "font-semibold" : "text-muted-foreground"}>
+          {brl(vendido)} / {brl(meta)}
+        </span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={
+            "h-full rounded-full transition-all " + (pct >= 100 ? "bg-emerald-500" : "bg-primary")
+          }
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-0.5 text-right text-xs text-muted-foreground">{pct}%</p>
     </div>
   );
 }

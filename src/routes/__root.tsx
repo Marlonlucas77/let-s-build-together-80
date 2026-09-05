@@ -80,10 +80,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "EQSAN | Gestão de Orçamentos e Follow-up Comercial" },
-      { name: "description", content: "Sistema comercial EQSAN para registrar oportunidades, criar orçamentos e acompanhar follow-ups até o fechamento." },
+      {
+        name: "description",
+        content:
+          "Sistema comercial EQSAN para registrar oportunidades, criar orçamentos e acompanhar follow-ups até o fechamento.",
+      },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "EQSAN | Gestão Comercial" },
-      { property: "og:description", content: "Oportunidades, orçamentos e follow-ups em um só lugar." },
+      {
+        property: "og:description",
+        content: "Oportunidades, orçamentos e follow-ups em um só lugar.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },

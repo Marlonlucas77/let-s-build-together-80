@@ -27,14 +27,21 @@ import {
 } from "@/components/ui/select";
 import { OPP_STATUS, ORIGENS } from "@/lib/constants";
 import { brl, fmtDate } from "@/lib/format";
+import { SavedFilters } from "@/components/SavedFilters";
+import { SortableTh, applySort, toggleSort, type SortState } from "@/components/SortableTh";
 import { fetchClients, fetchContacts, logActivity, type Opportunity } from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
+
+type SortKey = "numero" | "titulo" | "cliente" | "valor" | "criada_em" | "status";
 
 export const Route = createFileRoute("/_authenticated/oportunidades/")({
   head: () => ({
     meta: [
       { title: "Oportunidades | EQSAN Comercial" },
-      { name: "description", content: "Registro e acompanhamento das oportunidades comerciais da EQSAN." },
+      {
+        name: "description",
+        content: "Registro e acompanhamento das oportunidades comerciais da EQSAN.",
+      },
       { property: "og:title", content: "Oportunidades | EQSAN Comercial" },
       { property: "og:description", content: "Da solicitação ao fechamento." },
       { property: "og:type", content: "website" },
@@ -50,6 +57,7 @@ function OpportunitiesPage() {
   const { profile, user } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [sort, setSort] = useState<SortState<SortKey>>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
@@ -78,11 +86,34 @@ function OpportunitiesPage() {
       const okText =
         !t ||
         [o.titulo, o.numero, o.clients?.razao_social].some((v) =>
-          String(v ?? "").toLowerCase().includes(t),
+          String(v ?? "")
+            .toLowerCase()
+            .includes(t),
         );
       return okStatus && okText;
     });
   }, [opps, search, statusFilter]);
+
+  const sorted = useMemo(
+    () =>
+      applySort(filtered, sort, (o, key) => {
+        switch (key) {
+          case "numero":
+            return o.numero;
+          case "titulo":
+            return o.titulo;
+          case "cliente":
+            return o.clients?.razao_social;
+          case "valor":
+            return Number(o.valor_estimado);
+          case "criada_em":
+            return o.created_at;
+          case "status":
+            return o.status;
+        }
+      }),
+    [filtered, sort],
+  );
 
   const create = useMutation({
     mutationFn: async () => {
@@ -160,6 +191,14 @@ function OpportunitiesPage() {
             ))}
           </SelectContent>
         </Select>
+        <SavedFilters
+          namespace="oportunidades"
+          currentFilters={{ search, statusFilter }}
+          onApply={(f) => {
+            setSearch(f.search);
+            setStatusFilter(f.statusFilter);
+          }}
+        />
       </div>
 
       <Card>
@@ -168,17 +207,51 @@ function OpportunitiesPage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Número</th>
-                  <th className="px-4 py-3">Título</th>
-                  <th className="hidden px-4 py-3 md:table-cell">Cliente</th>
+                  <SortableTh
+                    label="Número"
+                    sortKey="numero"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                  />
+                  <SortableTh
+                    label="Título"
+                    sortKey="titulo"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                  />
+                  <SortableTh
+                    label="Cliente"
+                    sortKey="cliente"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="hidden md:table-cell"
+                  />
                   <th className="hidden px-4 py-3 lg:table-cell">Responsável</th>
-                  <th className="px-4 py-3 text-right">Valor</th>
-                  <th className="hidden px-4 py-3 lg:table-cell">Criada em</th>
-                  <th className="px-4 py-3">Status</th>
+                  <SortableTh
+                    label="Valor"
+                    sortKey="valor"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="text-right"
+                    align="right"
+                  />
+                  <SortableTh
+                    label="Criada em"
+                    sortKey="criada_em"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="hidden lg:table-cell"
+                  />
+                  <SortableTh
+                    label="Status"
+                    sortKey="status"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                  />
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((o) => (
+                {sorted.map((o) => (
                   <tr key={o.id} className="border-b last:border-0 hover:bg-muted/40">
                     <td className="px-4 py-3">
                       <Link
@@ -199,7 +272,7 @@ function OpportunitiesPage() {
                     </td>
                   </tr>
                 ))}
-                {!filtered.length ? (
+                {!sorted.length ? (
                   <tr>
                     <td className="px-4 py-6 text-muted-foreground" colSpan={7}>
                       Nenhuma oportunidade encontrada.
@@ -221,8 +294,14 @@ function OpportunitiesPage() {
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!form["client_id"]) { toast.error("Selecione o cliente."); return; }
-              if (!form["titulo"]) { toast.error("Informe o título."); return; }
+              if (!form["client_id"]) {
+                toast.error("Selecione o cliente.");
+                return;
+              }
+              if (!form["titulo"]) {
+                toast.error("Informe o título.");
+                return;
+              }
               create.mutate();
             }}
           >

@@ -95,6 +95,63 @@ export type FollowUp = {
   status: string;
 };
 
+export type SalesGoal = {
+  id: string;
+  responsavel: string;
+  ano: number;
+  mes: number;
+  meta_valor: number;
+};
+
+export type Product = {
+  id: string;
+  codigo: string | null;
+  descricao: string;
+  unidade: string;
+  preco_unitario: number;
+  ativo: boolean;
+};
+
+export async function fetchProducts(onlyActive = true) {
+  let q = supabase.from("products").select("*").order("descricao");
+  if (onlyActive) q = q.eq("ativo", true);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as Product[];
+}
+
+export type QuoteAttachment = {
+  id: string;
+  quote_id: string;
+  nome_arquivo: string;
+  caminho: string;
+  tamanho_bytes: number | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export async function fetchSalesGoals(ano: number, mes: number) {
+  const { data, error } = await supabase
+    .from("sales_goals")
+    .select("*")
+    .eq("ano", ano)
+    .eq("mes", mes);
+  if (error) throw error;
+  return (data ?? []) as SalesGoal[];
+}
+
+export async function fetchQuoteAttachments(quoteId: string) {
+  const { data, error } = await supabase
+    .from("quote_attachments")
+    .select("*")
+    .eq("quote_id", quoteId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as QuoteAttachment[];
+}
+
+export const ATTACHMENTS_BUCKET = "quote-attachments";
+
 export async function logActivity(input: {
   opportunity_id?: string | null | undefined;
   quote_id?: string | null | undefined;
@@ -103,7 +160,7 @@ export async function logActivity(input: {
   descricao: string;
   usuario?: string | null | undefined;
 }) {
-  await supabase.from("activities").insert({
+  const { error } = await supabase.from("activities").insert({
     opportunity_id: input.opportunity_id ?? null,
     quote_id: input.quote_id ?? null,
     client_id: input.client_id ?? null,
@@ -111,13 +168,14 @@ export async function logActivity(input: {
     descricao: input.descricao,
     usuario: input.usuario ?? null,
   });
+  // Não relança o erro: o registro principal (orçamento/oportunidade) já foi salvo
+  // com sucesso quando isso é chamado, então uma falha aqui não deve reverter a
+  // tela pro usuário. Mas também não deve desaparecer sem deixar rastro.
+  if (error) console.error("[logActivity] falha ao registrar atividade:", error);
 }
 
 export async function fetchClients() {
-  const { data, error } = await supabase
-    .from("clients")
-    .select("*")
-    .order("razao_social");
+  const { data, error } = await supabase.from("clients").select("*").order("razao_social");
   if (error) throw error;
   return (data ?? []) as Client[];
 }
@@ -136,11 +194,7 @@ export async function fetchSettings() {
   return data;
 }
 
-export function recalcItem(item: {
-  quantidade: number;
-  valor_unitario: number;
-  desconto: number;
-}) {
+export function recalcItem(item: { quantidade: number; valor_unitario: number; desconto: number }) {
   const bruto = Number(item.quantidade || 0) * Number(item.valor_unitario || 0);
   return Math.max(0, Number((bruto - Number(item.desconto || 0)).toFixed(2)));
 }

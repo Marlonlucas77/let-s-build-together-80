@@ -25,7 +25,10 @@ export const Route = createFileRoute("/_authenticated/clientes/$id")({
   head: () => ({
     meta: [
       { title: "Ficha do cliente | EQSAN Comercial" },
-      { name: "description", content: "Dados cadastrais, contatos, oportunidades e orçamentos do cliente." },
+      {
+        name: "description",
+        content: "Dados cadastrais, contatos, oportunidades e orçamentos do cliente.",
+      },
       { property: "og:title", content: "Ficha do cliente | EQSAN Comercial" },
       { property: "og:description", content: "Histórico comercial completo do cliente." },
       { property: "og:type", content: "website" },
@@ -47,8 +50,16 @@ function ClientDetail() {
       const [c, ct, op, qt] = await Promise.all([
         supabase.from("clients").select("*").eq("id", id).maybeSingle(),
         supabase.from("contacts").select("*").eq("client_id", id).order("nome"),
-        supabase.from("opportunities").select("*").eq("client_id", id).order("created_at", { ascending: false }),
-        supabase.from("quotes").select("*").eq("client_id", id).order("created_at", { ascending: false }),
+        supabase
+          .from("opportunities")
+          .select("*")
+          .eq("client_id", id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("quotes")
+          .select("*")
+          .eq("client_id", id)
+          .order("created_at", { ascending: false }),
       ]);
       return {
         client: c.data as Client | null,
@@ -165,7 +176,9 @@ function ClientDetail() {
             <Info
               label="Valor aprovado"
               value={brl(
-                quotes.filter((q) => q.status === "aprovado").reduce((s, q) => s + Number(q.total), 0),
+                quotes
+                  .filter((q) => q.status === "aprovado")
+                  .reduce((s, q) => s + Number(q.total), 0),
               )}
             />
           </CardContent>
@@ -313,10 +326,14 @@ function ClientDetail() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!contact.nome || contact.nome.trim().length < 2)
-                { toast.error("Informe o nome do contato."); return; }
-              if (contact.email && !validEmail(contact.email))
-                { toast.error("E-mail inválido."); return; }
+              if (!contact.nome || contact.nome.trim().length < 2) {
+                toast.error("Informe o nome do contato.");
+                return;
+              }
+              if (contact.email && !validEmail(contact.email)) {
+                toast.error("E-mail inválido.");
+                return;
+              }
               saveContact.mutate(contact);
             }}
           >

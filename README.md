@@ -24,11 +24,11 @@ SOLICITAÇÃO → ANÁLISE → ORÇAMENTO → PROPOSTA ENVIADA → NEGOCIAÇÃO 
 
 ## Tecnologia
 
-| Camada | Stack |
-| --- | --- |
-| Frontend | React 19, TanStack Start (Router + Query), TypeScript, Tailwind CSS, shadcn/ui, Recharts |
-| Backend | Lovable Cloud (PostgreSQL + Auth + API REST/PostgREST + políticas de segurança) |
-| Autenticação | E-mail e senha, sessão persistida, senhas com hash gerenciado pela plataforma |
+| Camada       | Stack                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| Frontend     | React 19, TanStack Start (Router + Query), TypeScript, Tailwind CSS, shadcn/ui, Recharts |
+| Backend      | Lovable Cloud (PostgreSQL + Auth + API REST/PostgREST + políticas de segurança)          |
+| Autenticação | E-mail e senha, sessão persistida, senhas com hash gerenciado pela plataforma            |
 
 O backend é gerenciado: banco PostgreSQL, autenticação e API são provisionados automaticamente,
 sem servidor Express separado para manter e sem chaves privadas no código.
@@ -52,11 +52,11 @@ npm run build
 
 Criadas automaticamente no arquivo `.env` do projeto:
 
-| Variável | Uso |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Endereço da API do backend |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Chave pública do cliente |
-| `VITE_SUPABASE_PROJECT_ID` | Identificador do projeto |
+| Variável                        | Uso                        |
+| ------------------------------- | -------------------------- |
+| `VITE_SUPABASE_URL`             | Endereço da API do backend |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Chave pública do cliente   |
+| `VITE_SUPABASE_PROJECT_ID`      | Identificador do projeto   |
 
 Chaves privadas ficam no cofre de segredos da plataforma e nunca no código.
 
@@ -75,16 +75,21 @@ Recursos automáticos:
 - Índices para busca por cliente, CNPJ, status e follow-up.
 - Dados demonstrativos: 10 clientes, 20 oportunidades, 15 orçamentos e follow-ups em vários status.
 
-## Usuário administrador inicial
+## Usuários e acesso
 
-Não existe senha fixa no código. Acesse `/auth`, use a aba **Criar conta** e cadastre-se:
-**o primeiro usuário cadastrado recebe o perfil ADMIN**. Os seguintes entram como COMERCIAL.
+O autocadastro público foi desativado (`Allow new users to sign up` desligado nas
+configurações de Authentication do Supabase/Lovable Cloud) — a tela `/auth` só permite login.
+
+Para criar novos acessos: painel do Supabase/Lovable Cloud → **Authentication → Users → Add
+user** (ou **Invite user**, que manda um link por e-mail para a pessoa definir a senha).
+**O primeiro usuário criado recebe o perfil ADMIN automaticamente; os seguintes entram como
+COMERCIAL** (via trigger `handle_new_user`, sem precisar de nenhuma ação manual extra).
 
 ## Perfis de acesso
 
-| Perfil | Permissões |
-| --- | --- |
-| ADMIN | Acesso completo a todos os registros e às configurações |
+| Perfil    | Permissões                                                  |
+| --------- | ----------------------------------------------------------- |
+| ADMIN     | Acesso completo a todos os registros e às configurações     |
 | COMERCIAL | Clientes, oportunidades, orçamentos, follow-ups e dashboard |
 
 ## Segurança

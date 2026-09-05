@@ -1,4 +1,10 @@
-import { TONE_CLASSES, oppStatusLabel, oppTone, quoteStatusLabel, quoteTone } from "@/lib/constants";
+import {
+  TONE_CLASSES,
+  oppStatusLabel,
+  oppTone,
+  quoteStatusLabel,
+  quoteTone,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function StatusBadge({

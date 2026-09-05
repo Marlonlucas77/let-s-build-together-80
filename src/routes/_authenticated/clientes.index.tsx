@@ -29,12 +29,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { fetchClients, type Client } from "@/lib/api";
 import { maskCNPJ, validCNPJ, validEmail, onlyDigits } from "@/lib/format";
+import { SortableTh, applySort, toggleSort, type SortState } from "@/components/SortableTh";
+
+type SortKey = "razao_social" | "cnpj" | "cidade" | "telefone";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({
     meta: [
       { title: "Clientes | EQSAN Comercial" },
-      { name: "description", content: "Cadastro de clientes, contatos e histórico comercial da EQSAN." },
+      {
+        name: "description",
+        content: "Cadastro de clientes, contatos e histórico comercial da EQSAN.",
+      },
       { property: "og:title", content: "Clientes | EQSAN Comercial" },
       { property: "og:description", content: "Cadastro de clientes e contatos." },
       { property: "og:type", content: "website" },
@@ -62,6 +68,7 @@ const EMPTY: Partial<Client> = {
 function ClientsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortState<SortKey>>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Client>>(EMPTY);
   const [toDelete, setToDelete] = useState<Client | null>(null);
@@ -80,6 +87,23 @@ function ClientsPage() {
         .some((v) => String(v).toLowerCase().includes(t)),
     );
   }, [clients, search]);
+
+  const sorted = useMemo(
+    () =>
+      applySort(filtered, sort, (c, key) => {
+        switch (key) {
+          case "razao_social":
+            return c.razao_social;
+          case "cnpj":
+            return c.cnpj;
+          case "cidade":
+            return c.cidade;
+          case "telefone":
+            return c.telefone;
+        }
+      }),
+    [filtered, sort],
+  );
 
   const save = useMutation({
     mutationFn: async (payload: Partial<Client>) => {
@@ -117,11 +141,18 @@ function ClientsPage() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.razao_social || form.razao_social.trim().length < 3)
-      { toast.error("Informe a razão social."); return; }
-    if (form.cnpj && onlyDigits(form.cnpj).length > 0 && !validCNPJ(form.cnpj))
-      { toast.error("CNPJ inválido."); return; }
-    if (form.email && !validEmail(form.email)) { toast.error("E-mail inválido."); return; }
+    if (!form.razao_social || form.razao_social.trim().length < 3) {
+      toast.error("Informe a razão social.");
+      return;
+    }
+    if (form.cnpj && onlyDigits(form.cnpj).length > 0 && !validCNPJ(form.cnpj)) {
+      toast.error("CNPJ inválido.");
+      return;
+    }
+    if (form.email && !validEmail(form.email)) {
+      toast.error("E-mail inválido.");
+      return;
+    }
     save.mutate(form);
   }
 
@@ -161,10 +192,33 @@ function ClientsPage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Cliente</th>
-                  <th className="hidden px-4 py-3 md:table-cell">CNPJ</th>
-                  <th className="hidden px-4 py-3 lg:table-cell">Cidade/UF</th>
-                  <th className="hidden px-4 py-3 lg:table-cell">Telefone</th>
+                  <SortableTh
+                    label="Cliente"
+                    sortKey="razao_social"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                  />
+                  <SortableTh
+                    label="CNPJ"
+                    sortKey="cnpj"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="hidden md:table-cell"
+                  />
+                  <SortableTh
+                    label="Cidade/UF"
+                    sortKey="cidade"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="hidden lg:table-cell"
+                  />
+                  <SortableTh
+                    label="Telefone"
+                    sortKey="telefone"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="hidden lg:table-cell"
+                  />
                   <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
               </thead>
@@ -176,7 +230,7 @@ function ClientsPage() {
                     </td>
                   </tr>
                 ) : null}
-                {filtered.map((c) => (
+                {sorted.map((c) => (
                   <tr key={c.id} className="border-b last:border-0 hover:bg-muted/40">
                     <td className="px-4 py-3">
                       <Link
@@ -218,7 +272,7 @@ function ClientsPage() {
                     </td>
                   </tr>
                 ))}
-                {!isLoading && !filtered.length ? (
+                {!isLoading && !sorted.length ? (
                   <tr>
                     <td className="px-4 py-6 text-muted-foreground" colSpan={5}>
                       Nenhum cliente encontrado.
@@ -262,11 +316,17 @@ function ClientsPage() {
             </div>
             <div className="space-y-2">
               <Label>Telefone</Label>
-              <Input value={form.telefone ?? ""} onChange={(e) => set("telefone", e.target.value)} />
+              <Input
+                value={form.telefone ?? ""}
+                onChange={(e) => set("telefone", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>WhatsApp</Label>
-              <Input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
+              <Input
+                value={form.whatsapp ?? ""}
+                onChange={(e) => set("whatsapp", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>E-mail</Label>
@@ -282,7 +342,10 @@ function ClientsPage() {
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>Endereço</Label>
-              <Input value={form.endereco ?? ""} onChange={(e) => set("endereco", e.target.value)} />
+              <Input
+                value={form.endereco ?? ""}
+                onChange={(e) => set("endereco", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Cidade</Label>

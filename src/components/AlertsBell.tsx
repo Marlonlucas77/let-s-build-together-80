@@ -1,13 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Bell, AlertTriangle, Clock, MailQuestion } from "lucide-react";
+import { Bell, AlertTriangle, CalendarClock, Clock, MailQuestion } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function useAlerts() {
   return useQuery({
@@ -24,8 +20,10 @@ export function useAlerts() {
         59,
       ).toISOString();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+      const emCincoDias = new Date(now.getTime() + 5 * 86400000).toISOString().slice(0, 10);
+      const hojeData = now.toISOString().slice(0, 10);
 
-      const [atrasados, hoje, semRetorno] = await Promise.all([
+      const [atrasados, hoje, semRetorno, vencendo] = await Promise.all([
         supabase
           .from("follow_ups")
           .select("id", { count: "exact", head: true })
@@ -42,12 +40,19 @@ export function useAlerts() {
           .select("id", { count: "exact", head: true })
           .eq("status", "enviado")
           .lt("updated_at", sevenDaysAgo),
+        supabase
+          .from("quotes")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["em_elaboracao", "enviado", "negociacao"])
+          .gte("validade", hojeData)
+          .lte("validade", emCincoDias),
       ]);
 
       return {
         atrasados: atrasados.count ?? 0,
         hoje: hoje.count ?? 0,
         semRetorno: semRetorno.count ?? 0,
+        vencendo: vencendo.count ?? 0,
       };
     },
     refetchOnWindowFocus: true,
@@ -56,7 +61,8 @@ export function useAlerts() {
 
 export function AlertsBell() {
   const { data } = useAlerts();
-  const total = (data?.atrasados ?? 0) + (data?.hoje ?? 0) + (data?.semRetorno ?? 0);
+  const total =
+    (data?.atrasados ?? 0) + (data?.hoje ?? 0) + (data?.semRetorno ?? 0) + (data?.vencendo ?? 0);
 
   return (
     <Popover>
@@ -97,8 +103,17 @@ export function AlertsBell() {
           >
             <MailQuestion className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Existem <strong>{data?.semRetorno ?? 0}</strong> propostas enviadas sem retorno há mais
-              de 7 dias.
+              Existem <strong>{data?.semRetorno ?? 0}</strong> propostas enviadas sem retorno há
+              mais de 7 dias.
+            </span>
+          </Link>
+          <Link
+            to="/orcamentos"
+            className="flex items-start gap-2 rounded-md border border-orange-200 bg-orange-50 p-3 text-orange-900"
+          >
+            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>{data?.vencendo ?? 0}</strong> orçamentos vencem nos próximos 5 dias.
             </span>
           </Link>
         </div>

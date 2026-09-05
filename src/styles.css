@@ -159,6 +159,10 @@
 }
 
 @media print {
-  .no-print { display: none !important; }
-  body { background: #fff; }
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
 }
