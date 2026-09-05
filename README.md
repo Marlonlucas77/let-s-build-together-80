@@ -75,10 +75,15 @@ Recursos automáticos:
 - Índices para busca por cliente, CNPJ, status e follow-up.
 - Dados demonstrativos: 10 clientes, 20 oportunidades, 15 orçamentos e follow-ups em vários status.
 
-## Usuário administrador inicial
+## Usuários e acesso
 
-Não existe senha fixa no código. Acesse `/auth`, use a aba **Criar conta** e cadastre-se:
-**o primeiro usuário cadastrado recebe o perfil ADMIN**. Os seguintes entram como COMERCIAL.
+O autocadastro público foi desativado (`Allow new users to sign up` desligado nas
+configurações de Authentication do Supabase/Lovable Cloud) — a tela `/auth` só permite login.
+
+Para criar novos acessos: painel do Supabase/Lovable Cloud → **Authentication → Users → Add
+user** (ou **Invite user**, que manda um link por e-mail para a pessoa definir a senha).
+**O primeiro usuário criado recebe o perfil ADMIN automaticamente; os seguintes entram como
+COMERCIAL** (via trigger `handle_new_user`, sem precisar de nenhuma ação manual extra).
 
 ## Perfis de acesso
 
