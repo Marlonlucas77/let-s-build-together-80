@@ -53,7 +53,10 @@ export const Route = createFileRoute("/_authenticated/orcamentos/$id")({
   head: () => ({
     meta: [
       { title: "Orçamento | EQSAN Comercial" },
-      { name: "description", content: "Itens, valores, condições comerciais e follow-ups do orçamento." },
+      {
+        name: "description",
+        content: "Itens, valores, condições comerciais e follow-ups do orçamento.",
+      },
       { property: "og:title", content: "Orçamento | EQSAN Comercial" },
       { property: "og:description", content: "Edite itens e gere a proposta em PDF." },
       { property: "og:type", content: "website" },
@@ -82,11 +85,20 @@ function QuoteDetail() {
         .maybeSingle();
       const [items, fu, act] = await Promise.all([
         supabase.from("quote_items").select("*").eq("quote_id", id).order("ordem"),
-        supabase.from("follow_ups").select("*").eq("quote_id", id).order("data", { ascending: false }),
-        supabase.from("activities").select("*").eq("quote_id", id).order("created_at", { ascending: false }),
+        supabase
+          .from("follow_ups")
+          .select("*")
+          .eq("quote_id", id)
+          .order("data", { ascending: false }),
+        supabase
+          .from("activities")
+          .select("*")
+          .eq("quote_id", id)
+          .order("created_at", { ascending: false }),
       ]);
       return {
-        quote: quote as unknown as (Quote & { clients: Client | null; contacts: Contact | null }) | null,
+        quote: quote as unknown as
+          (Quote & { clients: Client | null; contacts: Contact | null }) | null,
         items: (items.data ?? []) as QuoteItem[],
         followups: (fu.data ?? []) as FollowUp[],
         activities: (act.data ?? []) as {
@@ -114,7 +126,10 @@ function QuoteDetail() {
 
   const saveQuote = useMutation({
     mutationFn: async (payload: Partial<Quote>) => {
-      const { error } = await supabase.from("quotes").update(payload as never).eq("id", id);
+      const { error } = await supabase
+        .from("quotes")
+        .update(payload as never)
+        .eq("id", id);
       if (error) throw error;
       if (payload.desconto !== undefined) await recalcTotals();
     },
@@ -613,11 +628,7 @@ function ItemRow({
       />
       <div className="flex items-center justify-between gap-2 sm:col-span-1">
         <span className="text-sm font-medium">{brl(total)}</span>
-        <button
-          onClick={onRemove}
-          aria-label="Remover item"
-          className="rounded p-1 hover:bg-muted"
-        >
+        <button onClick={onRemove} aria-label="Remover item" className="rounded p-1 hover:bg-muted">
           <Trash2 className="h-4 w-4 text-destructive" />
         </button>
       </div>

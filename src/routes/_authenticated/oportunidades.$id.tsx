@@ -26,14 +26,24 @@ import {
 } from "@/components/ui/select";
 import { LOSS_REASONS, OPP_STATUS, contactTypeLabel, oppStatusLabel } from "@/lib/constants";
 import { brl, fmtDate, fmtDateTime, whatsappLink } from "@/lib/format";
-import { logActivity, type Client, type Contact, type FollowUp, type Opportunity, type Quote } from "@/lib/api";
+import {
+  logActivity,
+  type Client,
+  type Contact,
+  type FollowUp,
+  type Opportunity,
+  type Quote,
+} from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_authenticated/oportunidades/$id")({
   head: () => ({
     meta: [
       { title: "Oportunidade | EQSAN Comercial" },
-      { name: "description", content: "Detalhes, follow-ups e histórico da oportunidade comercial." },
+      {
+        name: "description",
+        content: "Detalhes, follow-ups e histórico da oportunidade comercial.",
+      },
       { property: "og:title", content: "Oportunidade | EQSAN Comercial" },
       { property: "og:description", content: "Acompanhamento completo da negociação." },
       { property: "og:type", content: "website" },
@@ -61,14 +71,32 @@ function OpportunityDetail() {
         .eq("id", id)
         .maybeSingle();
       const [fu, act, qts] = await Promise.all([
-        supabase.from("follow_ups").select("*").eq("opportunity_id", id).order("data", { ascending: false }),
-        supabase.from("activities").select("*").eq("opportunity_id", id).order("created_at", { ascending: false }),
-        supabase.from("quotes").select("*").eq("opportunity_id", id).order("created_at", { ascending: false }),
+        supabase
+          .from("follow_ups")
+          .select("*")
+          .eq("opportunity_id", id)
+          .order("data", { ascending: false }),
+        supabase
+          .from("activities")
+          .select("*")
+          .eq("opportunity_id", id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("quotes")
+          .select("*")
+          .eq("opportunity_id", id)
+          .order("created_at", { ascending: false }),
       ]);
       return {
-        opp: opp as unknown as (Opportunity & { clients: Client | null; contacts: Contact | null }) | null,
+        opp: opp as unknown as
+          (Opportunity & { clients: Client | null; contacts: Contact | null }) | null,
         followups: (fu.data ?? []) as FollowUp[],
-        activities: (act.data ?? []) as { id: string; descricao: string; created_at: string; usuario: string | null }[],
+        activities: (act.data ?? []) as {
+          id: string;
+          descricao: string;
+          created_at: string;
+          usuario: string | null;
+        }[],
         quotes: (qts.data ?? []) as Quote[],
       };
     },
@@ -224,7 +252,9 @@ function OpportunityDetail() {
               >
                 <div>
                   <p className="font-medium">{q.numero}</p>
-                  <p className="text-xs text-muted-foreground">v{q.versao} · {fmtDate(q.data)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    v{q.versao} · {fmtDate(q.data)}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="font-medium">{brl(q.total)}</p>

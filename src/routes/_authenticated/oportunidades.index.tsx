@@ -34,7 +34,10 @@ export const Route = createFileRoute("/_authenticated/oportunidades/")({
   head: () => ({
     meta: [
       { title: "Oportunidades | EQSAN Comercial" },
-      { name: "description", content: "Registro e acompanhamento das oportunidades comerciais da EQSAN." },
+      {
+        name: "description",
+        content: "Registro e acompanhamento das oportunidades comerciais da EQSAN.",
+      },
       { property: "og:title", content: "Oportunidades | EQSAN Comercial" },
       { property: "og:description", content: "Da solicitação ao fechamento." },
       { property: "og:type", content: "website" },
@@ -78,7 +81,9 @@ function OpportunitiesPage() {
       const okText =
         !t ||
         [o.titulo, o.numero, o.clients?.razao_social].some((v) =>
-          String(v ?? "").toLowerCase().includes(t),
+          String(v ?? "")
+            .toLowerCase()
+            .includes(t),
         );
       return okStatus && okText;
     });
@@ -221,8 +226,14 @@ function OpportunitiesPage() {
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!form["client_id"]) { toast.error("Selecione o cliente."); return; }
-              if (!form["titulo"]) { toast.error("Informe o título."); return; }
+              if (!form["client_id"]) {
+                toast.error("Selecione o cliente.");
+                return;
+              }
+              if (!form["titulo"]) {
+                toast.error("Informe o título.");
+                return;
+              }
               create.mutate();
             }}
           >

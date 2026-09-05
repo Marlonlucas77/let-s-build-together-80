@@ -17,7 +17,10 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
     meta: [
       { title: "Configurações | EQSAN Comercial" },
-      { name: "description", content: "Dados da empresa, textos da proposta, usuários e listas do sistema." },
+      {
+        name: "description",
+        content: "Dados da empresa, textos da proposta, usuários e listas do sistema.",
+      },
       { property: "og:title", content: "Configurações | EQSAN Comercial" },
       { property: "og:description", content: "Personalize o sistema comercial da EQSAN." },
       { property: "og:type", content: "website" },
@@ -124,9 +127,7 @@ function SettingsPage() {
               <Label>Texto de abertura</Label>
               <Textarea
                 value={form["proposta_texto_abertura"] ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, proposta_texto_abertura: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, proposta_texto_abertura: e.target.value })}
               />
             </div>
             <div className="space-y-1">
@@ -140,9 +141,7 @@ function SettingsPage() {
               <Label>Condições de pagamento padrão</Label>
               <Textarea
                 value={form["condicoes_pagamento_padrao"] ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, condicoes_pagamento_padrao: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, condicoes_pagamento_padrao: e.target.value })}
               />
             </div>
             <div className="space-y-1">
@@ -171,14 +170,15 @@ function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between border-b py-2 last:border-0">
+              <div
+                key={u.id}
+                className="flex items-center justify-between border-b py-2 last:border-0"
+              >
                 <div>
                   <p className="font-medium">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                 </div>
-                <span className="rounded-full border px-2 py-0.5 text-xs uppercase">
-                  {u.role}
-                </span>
+                <span className="rounded-full border px-2 py-0.5 text-xs uppercase">{u.role}</span>
               </div>
             ))}
             <p className="pt-2 text-xs text-muted-foreground">

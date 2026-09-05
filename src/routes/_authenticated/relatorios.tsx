@@ -13,7 +13,10 @@ export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
     meta: [
       { title: "Relatórios comerciais | EQSAN" },
-      { name: "description", content: "Conversão, desempenho por vendedor e situação dos follow-ups." },
+      {
+        name: "description",
+        content: "Conversão, desempenho por vendedor e situação dos follow-ups.",
+      },
       { property: "og:title", content: "Relatórios comerciais | EQSAN" },
       { property: "og:description", content: "Indicadores do funil de vendas EQSAN." },
       { property: "og:type", content: "website" },
@@ -40,9 +43,9 @@ function ReportsPage() {
     },
   });
 
-  const quotes = data?.quotes ?? [];
-  const opps = data?.opps ?? [];
-  const followups = data?.followups ?? [];
+  const quotes = useMemo(() => data?.quotes ?? [], [data]);
+  const opps = useMemo(() => data?.opps ?? [], [data]);
+  const followups = useMemo(() => data?.followups ?? [], [data]);
 
   const resumo = useMemo(() => {
     const aprovados = quotes.filter((q) => q.status === "aprovado");
@@ -63,7 +66,13 @@ function ReportsPage() {
   const porVendedor = useMemo(() => {
     const map = new Map<
       string,
-      { oportunidades: number; orcamentos: number; aprovados: number; perdidos: number; valor: number }
+      {
+        oportunidades: number;
+        orcamentos: number;
+        aprovados: number;
+        perdidos: number;
+        valor: number;
+      }
     >();
     const get = (k: string) =>
       map.get(k) ?? { oportunidades: 0, orcamentos: 0, aprovados: 0, perdidos: 0, valor: 0 };
@@ -115,7 +124,14 @@ function ReportsPage() {
               variant="outline"
               onClick={() =>
                 csvDownload("relatorio-vendedores.csv", [
-                  ["Responsável", "Oportunidades", "Orçamentos", "Aprovados", "Perdidos", "Valor vendido"],
+                  [
+                    "Responsável",
+                    "Oportunidades",
+                    "Orçamentos",
+                    "Aprovados",
+                    "Perdidos",
+                    "Valor vendido",
+                  ],
                   ...porVendedor.map(([k, v]) => [
                     k,
                     v.oportunidades,

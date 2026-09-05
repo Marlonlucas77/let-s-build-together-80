@@ -34,7 +34,10 @@ export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({
     meta: [
       { title: "Clientes | EQSAN Comercial" },
-      { name: "description", content: "Cadastro de clientes, contatos e histórico comercial da EQSAN." },
+      {
+        name: "description",
+        content: "Cadastro de clientes, contatos e histórico comercial da EQSAN.",
+      },
       { property: "og:title", content: "Clientes | EQSAN Comercial" },
       { property: "og:description", content: "Cadastro de clientes e contatos." },
       { property: "og:type", content: "website" },
@@ -117,11 +120,18 @@ function ClientsPage() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.razao_social || form.razao_social.trim().length < 3)
-      { toast.error("Informe a razão social."); return; }
-    if (form.cnpj && onlyDigits(form.cnpj).length > 0 && !validCNPJ(form.cnpj))
-      { toast.error("CNPJ inválido."); return; }
-    if (form.email && !validEmail(form.email)) { toast.error("E-mail inválido."); return; }
+    if (!form.razao_social || form.razao_social.trim().length < 3) {
+      toast.error("Informe a razão social.");
+      return;
+    }
+    if (form.cnpj && onlyDigits(form.cnpj).length > 0 && !validCNPJ(form.cnpj)) {
+      toast.error("CNPJ inválido.");
+      return;
+    }
+    if (form.email && !validEmail(form.email)) {
+      toast.error("E-mail inválido.");
+      return;
+    }
     save.mutate(form);
   }
 
@@ -262,11 +272,17 @@ function ClientsPage() {
             </div>
             <div className="space-y-2">
               <Label>Telefone</Label>
-              <Input value={form.telefone ?? ""} onChange={(e) => set("telefone", e.target.value)} />
+              <Input
+                value={form.telefone ?? ""}
+                onChange={(e) => set("telefone", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>WhatsApp</Label>
-              <Input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
+              <Input
+                value={form.whatsapp ?? ""}
+                onChange={(e) => set("whatsapp", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>E-mail</Label>
@@ -282,7 +298,10 @@ function ClientsPage() {
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>Endereço</Label>
-              <Input value={form.endereco ?? ""} onChange={(e) => set("endereco", e.target.value)} />
+              <Input
+                value={form.endereco ?? ""}
+                onChange={(e) => set("endereco", e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Cidade</Label>

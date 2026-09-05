@@ -27,7 +27,10 @@ export const Route = createFileRoute("/_authenticated/followups")({
   head: () => ({
     meta: [
       { title: "Central de follow-ups | EQSAN Comercial" },
-      { name: "description", content: "Follow-ups atrasados, de hoje e próximos, com acesso direto à oportunidade." },
+      {
+        name: "description",
+        content: "Follow-ups atrasados, de hoje e próximos, com acesso direto à oportunidade.",
+      },
       { property: "og:title", content: "Central de follow-ups | EQSAN Comercial" },
       { property: "og:description", content: "Nenhuma proposta sem retorno." },
       { property: "og:type", content: "website" },
@@ -178,20 +181,13 @@ function Section({
               ) : (
                 <div>{content}</div>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2"
-                onClick={() => onConclude(r.id)}
-              >
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => onConclude(r.id)}>
                 <CheckCircle2 className="mr-1 h-4 w-4" /> Concluir
               </Button>
             </div>
           );
         })}
-        {!rows.length ? (
-          <p className="text-sm text-muted-foreground">Nada por aqui.</p>
-        ) : null}
+        {!rows.length ? <p className="text-sm text-muted-foreground">Nada por aqui.</p> : null}
       </CardContent>
     </Card>
   );

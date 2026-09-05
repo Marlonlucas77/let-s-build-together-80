@@ -39,8 +39,14 @@ function AuthPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!validEmail(email)) { toast.error("Informe um e-mail válido."); return; }
-    if (senha.length < 6) { toast.error("A senha deve ter ao menos 6 caracteres."); return; }
+    if (!validEmail(email)) {
+      toast.error("Informe um e-mail válido.");
+      return;
+    }
+    if (senha.length < 6) {
+      toast.error("A senha deve ter ao menos 6 caracteres.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
     setLoading(false);
@@ -58,9 +64,18 @@ function AuthPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
-    if (nome.trim().length < 3) { toast.error("Informe seu nome completo."); return; }
-    if (!validEmail(email)) { toast.error("Informe um e-mail válido."); return; }
-    if (senha.length < 6) { toast.error("A senha deve ter ao menos 6 caracteres."); return; }
+    if (nome.trim().length < 3) {
+      toast.error("Informe seu nome completo.");
+      return;
+    }
+    if (!validEmail(email)) {
+      toast.error("Informe um e-mail válido.");
+      return;
+    }
+    if (senha.length < 6) {
+      toast.error("A senha deve ter ao menos 6 caracteres.");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,

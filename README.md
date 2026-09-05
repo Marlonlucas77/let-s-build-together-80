@@ -24,11 +24,11 @@ SOLICITAÇÃO → ANÁLISE → ORÇAMENTO → PROPOSTA ENVIADA → NEGOCIAÇÃO 
 
 ## Tecnologia
 
-| Camada | Stack |
-| --- | --- |
-| Frontend | React 19, TanStack Start (Router + Query), TypeScript, Tailwind CSS, shadcn/ui, Recharts |
-| Backend | Lovable Cloud (PostgreSQL + Auth + API REST/PostgREST + políticas de segurança) |
-| Autenticação | E-mail e senha, sessão persistida, senhas com hash gerenciado pela plataforma |
+| Camada       | Stack                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| Frontend     | React 19, TanStack Start (Router + Query), TypeScript, Tailwind CSS, shadcn/ui, Recharts |
+| Backend      | Lovable Cloud (PostgreSQL + Auth + API REST/PostgREST + políticas de segurança)          |
+| Autenticação | E-mail e senha, sessão persistida, senhas com hash gerenciado pela plataforma            |
 
 O backend é gerenciado: banco PostgreSQL, autenticação e API são provisionados automaticamente,
 sem servidor Express separado para manter e sem chaves privadas no código.
@@ -52,11 +52,11 @@ npm run build
 
 Criadas automaticamente no arquivo `.env` do projeto:
 
-| Variável | Uso |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Endereço da API do backend |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Chave pública do cliente |
-| `VITE_SUPABASE_PROJECT_ID` | Identificador do projeto |
+| Variável                        | Uso                        |
+| ------------------------------- | -------------------------- |
+| `VITE_SUPABASE_URL`             | Endereço da API do backend |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Chave pública do cliente   |
+| `VITE_SUPABASE_PROJECT_ID`      | Identificador do projeto   |
 
 Chaves privadas ficam no cofre de segredos da plataforma e nunca no código.
 
@@ -82,9 +82,9 @@ Não existe senha fixa no código. Acesse `/auth`, use a aba **Criar conta** e c
 
 ## Perfis de acesso
 
-| Perfil | Permissões |
-| --- | --- |
-| ADMIN | Acesso completo a todos os registros e às configurações |
+| Perfil    | Permissões                                                  |
+| --------- | ----------------------------------------------------------- |
+| ADMIN     | Acesso completo a todos os registros e às configurações     |
 | COMERCIAL | Clientes, oportunidades, orçamentos, follow-ups e dashboard |
 
 ## Segurança

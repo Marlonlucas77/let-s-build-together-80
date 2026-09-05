@@ -45,7 +45,10 @@ export const Route = createFileRoute("/_authenticated/orcamentos/")({
   head: () => ({
     meta: [
       { title: "Orçamentos | EQSAN Comercial" },
-      { name: "description", content: "Listagem, filtros e criação de orçamentos comerciais da EQSAN." },
+      {
+        name: "description",
+        content: "Listagem, filtros e criação de orçamentos comerciais da EQSAN.",
+      },
       { property: "og:title", content: "Orçamentos | EQSAN Comercial" },
       { property: "og:description", content: "Controle de propostas, valores e validade." },
       { property: "og:type", content: "website" },
@@ -119,7 +122,9 @@ function QuotesPage() {
       const okText =
         !t ||
         [q.numero, q.clients?.razao_social, q.responsavel].some((v) =>
-          String(v ?? "").toLowerCase().includes(t),
+          String(v ?? "")
+            .toLowerCase()
+            .includes(t),
         ) ||
         onlyDigits(q.clients?.cnpj).includes(onlyDigits(t));
       const okDe = !de || q.data >= de;
@@ -310,7 +315,10 @@ function QuotesPage() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!form["client_id"]) { toast.error("Selecione o cliente."); return; }
+              if (!form["client_id"]) {
+                toast.error("Selecione o cliente.");
+                return;
+              }
               create.mutate();
             }}
           >
@@ -353,8 +361,7 @@ function QuotesPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               A validade padrão de {settings?.validade_padrao_dias ?? 15} dias e as condições de
-              pagamento serão aplicadas automaticamente (
-              {toInputDate(new Date().toISOString())}).
+              pagamento serão aplicadas automaticamente ({toInputDate(new Date().toISOString())}).
             </p>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>

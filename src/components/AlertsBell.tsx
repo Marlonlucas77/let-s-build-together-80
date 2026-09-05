@@ -3,11 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Bell, AlertTriangle, Clock, MailQuestion } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function useAlerts() {
   return useQuery({
@@ -97,8 +93,8 @@ export function AlertsBell() {
           >
             <MailQuestion className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Existem <strong>{data?.semRetorno ?? 0}</strong> propostas enviadas sem retorno há mais
-              de 7 dias.
+              Existem <strong>{data?.semRetorno ?? 0}</strong> propostas enviadas sem retorno há
+              mais de 7 dias.
             </span>
           </Link>
         </div>

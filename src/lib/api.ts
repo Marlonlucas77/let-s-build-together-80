@@ -114,10 +114,7 @@ export async function logActivity(input: {
 }
 
 export async function fetchClients() {
-  const { data, error } = await supabase
-    .from("clients")
-    .select("*")
-    .order("razao_social");
+  const { data, error } = await supabase.from("clients").select("*").order("razao_social");
   if (error) throw error;
   return (data ?? []) as Client[];
 }
@@ -136,11 +133,7 @@ export async function fetchSettings() {
   return data;
 }
 
-export function recalcItem(item: {
-  quantidade: number;
-  valor_unitario: number;
-  desconto: number;
-}) {
+export function recalcItem(item: { quantidade: number; valor_unitario: number; desconto: number }) {
   const bruto = Number(item.quantidade || 0) * Number(item.valor_unitario || 0);
   return Math.max(0, Number((bruto - Number(item.desconto || 0)).toFixed(2)));
 }

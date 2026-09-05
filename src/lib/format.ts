@@ -95,11 +95,7 @@ export function whatsappLink(phone: string | null | undefined, message: string) 
 
 export function csvDownload(filename: string, rows: (string | number)[][]) {
   const content = rows
-    .map((r) =>
-      r
-        .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-        .join(";"),
-    )
+    .map((r) => r.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(";"))
     .join("\n");
   const blob = new Blob(["\ufeff" + content], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

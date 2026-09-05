@@ -39,7 +39,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard Comercial | EQSAN" },
-      { name: "description", content: "Indicadores comerciais, funil de vendas e valores em negociação da EQSAN." },
+      {
+        name: "description",
+        content: "Indicadores comerciais, funil de vendas e valores em negociação da EQSAN.",
+      },
       { property: "og:title", content: "Dashboard Comercial | EQSAN" },
       { property: "og:description", content: "Indicadores comerciais em tempo real." },
       { property: "og:type", content: "website" },
@@ -175,10 +178,7 @@ function Dashboard() {
 
   return (
     <div>
-      <PageHeader
-        title="Dashboard"
-        subtitle="Visão geral do desempenho comercial da EQSAN"
-      />
+      <PageHeader title="Dashboard" subtitle="Visão geral do desempenho comercial da EQSAN" />
 
       {(alerts?.atrasados ?? 0) > 0 || (alerts?.hoje ?? 0) > 0 ? (
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -225,12 +225,7 @@ function Dashboard() {
         <Kpi title="Aprovados" value={countBy("aprovada")} icon={CheckCircle2} tone="success" />
         <Kpi title="Perdidos" value={countBy("perdida")} icon={XCircle} tone="danger" />
         <Kpi title="Valor em negociação" value={brl(valorNegociacao)} icon={TrendingUp} />
-        <Kpi
-          title="Valor aprovado"
-          value={brl(valorAprovado)}
-          icon={CheckCircle2}
-          tone="success"
-        />
+        <Kpi title="Valor aprovado" value={brl(valorAprovado)} icon={CheckCircle2} tone="success" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -259,7 +254,14 @@ function Dashboard() {
             {porStatus.length ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={porStatus} dataKey="value" nameKey="name" outerRadius={90} label isAnimationActive={false}>
+                  <Pie
+                    data={porStatus}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={90}
+                    label
+                    isAnimationActive={false}
+                  >
                     {porStatus.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
@@ -286,8 +288,20 @@ function Dashboard() {
                 <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} />
                 <Tooltip formatter={(v) => brl(Number(v))} />
                 <Legend />
-                <Line type="monotone" dataKey="orcado" name="Orçado" stroke="#2563eb" strokeWidth={2} />
-                <Line type="monotone" dataKey="vendido" name="Aprovado" stroke="#16a34a" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="orcado"
+                  name="Orçado"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="vendido"
+                  name="Aprovado"
+                  stroke="#16a34a"
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
