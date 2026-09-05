@@ -95,6 +95,46 @@ export type FollowUp = {
   status: string;
 };
 
+export type SalesGoal = {
+  id: string;
+  responsavel: string;
+  ano: number;
+  mes: number;
+  meta_valor: number;
+};
+
+export type QuoteAttachment = {
+  id: string;
+  quote_id: string;
+  nome_arquivo: string;
+  caminho: string;
+  tamanho_bytes: number | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export async function fetchSalesGoals(ano: number, mes: number) {
+  const { data, error } = await supabase
+    .from("sales_goals")
+    .select("*")
+    .eq("ano", ano)
+    .eq("mes", mes);
+  if (error) throw error;
+  return (data ?? []) as SalesGoal[];
+}
+
+export async function fetchQuoteAttachments(quoteId: string) {
+  const { data, error } = await supabase
+    .from("quote_attachments")
+    .select("*")
+    .eq("quote_id", quoteId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as QuoteAttachment[];
+}
+
+export const ATTACHMENTS_BUCKET = "quote-attachments";
+
 export async function logActivity(input: {
   opportunity_id?: string | null | undefined;
   quote_id?: string | null | undefined;

@@ -83,6 +83,13 @@ export function validEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
+export function fmtBytes(bytes: number | null | undefined) {
+  if (!bytes) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function onlyDigits(v: string | null | undefined) {
   return (v ?? "").replace(/\D/g, "");
 }

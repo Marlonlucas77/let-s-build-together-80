@@ -7,10 +7,12 @@ import {
   FileText,
   Mail,
   MessageCircle,
+  Paperclip,
   Phone,
   Plus,
   Save,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,14 +39,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QUOTE_STATUS, contactTypeLabel, quoteStatusLabel } from "@/lib/constants";
-import { brl, fmtDate, fmtDateTime, toInputDate, whatsappLink } from "@/lib/format";
+import { brl, fmtDate, fmtDateTime, fmtBytes, toInputDate, whatsappLink } from "@/lib/format";
 import {
+  ATTACHMENTS_BUCKET,
+  fetchQuoteAttachments,
   logActivity,
   recalcItem,
   type Client,
   type Contact,
   type FollowUp,
   type Quote,
+  type QuoteAttachment,
   type QuoteItem,
 } from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
@@ -113,6 +118,63 @@ function QuoteDetail() {
 
   const quote = data?.quote;
   const items = data?.items ?? [];
+
+  const { data: attachments = [] } = useQuery({
+    queryKey: ["quote-attachments", id],
+    queryFn: () => fetchQuoteAttachments(id),
+  });
+
+  const uploadAttachment = useMutation({
+    mutationFn: async (file: File) => {
+      const path = `${id}/${crypto.randomUUID()}-${file.name}`;
+      const { error: upErr } = await supabase.storage.from(ATTACHMENTS_BUCKET).upload(path, file);
+      if (upErr) throw upErr;
+      const { error } = await supabase.from("quote_attachments").insert({
+        quote_id: id,
+        nome_arquivo: file.name,
+        caminho: path,
+        tamanho_bytes: file.size,
+        created_by: user?.id ?? null,
+      } as never);
+      if (error) throw error;
+      await logActivity({
+        quote_id: id,
+        opportunity_id: quote?.opportunity_id,
+        client_id: quote?.client_id,
+        tipo: "anexo",
+        descricao: `Anexou o arquivo "${file.name}".`,
+        usuario: userName(profile, user),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["quote-attachments", id] });
+      toast.success("Anexo enviado.");
+    },
+    onError: (e: Error) => toast.error("Erro ao enviar anexo: " + e.message),
+  });
+
+  const removeAttachment = useMutation({
+    mutationFn: async (att: QuoteAttachment) => {
+      await supabase.storage.from(ATTACHMENTS_BUCKET).remove([att.caminho]);
+      const { error } = await supabase.from("quote_attachments").delete().eq("id", att.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["quote-attachments", id] });
+      toast.success("Anexo removido.");
+    },
+  });
+
+  async function downloadAttachment(att: QuoteAttachment) {
+    const { data: signed, error } = await supabase.storage
+      .from(ATTACHMENTS_BUCKET)
+      .createSignedUrl(att.caminho, 60);
+    if (error || !signed) {
+      toast.error("Não foi possível gerar o link do anexo.");
+      return;
+    }
+    window.open(signed.signedUrl, "_blank", "noreferrer");
+  }
 
   async function recalcTotals(descontoOverride?: number) {
     const { data: rows } = await supabase.from("quote_items").select("total").eq("quote_id", id);
@@ -280,7 +342,20 @@ function QuoteDetail() {
   if (!quote) return <p className="text-sm text-muted-foreground">Carregando orçamento...</p>;
 
   const zap = quote.contacts?.whatsapp || quote.clients?.whatsapp;
-  const mensagem = `Olá${quote.contacts?.nome ? `, ${quote.contacts.nome}` : ""}! Tudo bem?\n\nEstou entrando em contato referente ao orçamento ${quote.numero} enviado anteriormente.\nGostaria de saber se podemos avançar com a proposta.`;
+  const linkProposta = `${window.location.origin}/proposta/${id}`;
+  const mensagem = `Olá${quote.contacts?.nome ? `, ${quote.contacts.nome}` : ""}! Tudo bem?\n\nSegue o link da nossa proposta comercial ${quote.numero}: ${linkProposta}\n\nGostaria de saber se podemos avançar com a proposta.`;
+
+  function registrarEnvio(canal: "whatsapp" | "email") {
+    void logActivity({
+      quote_id: id,
+      opportunity_id: quote?.opportunity_id,
+      client_id: quote?.client_id,
+      tipo: "envio",
+      descricao:
+        canal === "whatsapp" ? "Proposta enviada por WhatsApp." : "Proposta enviada por e-mail.",
+      usuario: userName(profile, user),
+    });
+  }
 
   return (
     <div>
@@ -300,7 +375,7 @@ function QuoteDetail() {
               <Phone className="mr-2 h-4 w-4" /> Follow-up
             </Button>
             {zap ? (
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild onClick={() => registrarEnvio("whatsapp")}>
                 <a href={whatsappLink(zap, mensagem)} target="_blank" rel="noreferrer">
                   <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
                 </a>
@@ -312,7 +387,7 @@ function QuoteDetail() {
                 setMail({
                   to: quote.contacts?.email ?? quote.clients?.email ?? "",
                   subject: `Proposta comercial ${quote.numero} - EQSAN`,
-                  body: `Prezado(a) ${quote.contacts?.nome ?? "cliente"},\n\nSegue em anexo a proposta comercial ${quote.numero}, no valor de ${brl(quote.total)}, com validade até ${fmtDate(quote.validade)}.\n\nFico à disposição para esclarecimentos.\n\nAtenciosamente,\n${quote.responsavel ?? ""}`,
+                  body: `Prezado(a) ${quote.contacts?.nome ?? "cliente"},\n\nSegue a proposta comercial ${quote.numero}, no valor de ${brl(quote.total)}, com validade até ${fmtDate(quote.validade)}.\n\nVocê pode visualizar e imprimir a proposta neste link:\n${linkProposta}\n\nFico à disposição para esclarecimentos.\n\nAtenciosamente,\n${quote.responsavel ?? ""}`,
                 });
                 setMailOpen(true);
               }}
@@ -461,6 +536,62 @@ function QuoteDetail() {
               </p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Anexos</CardTitle>
+              <Button size="sm" variant="outline" asChild>
+                <label className="cursor-pointer">
+                  <Upload className="mr-1 h-4 w-4" /> Enviar
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadAttachment.mutate(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {attachments.length ? (
+                attachments.map((att) => (
+                  <div
+                    key={att.id}
+                    className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm"
+                  >
+                    <button
+                      onClick={() => downloadAttachment(att)}
+                      className="flex min-w-0 items-center gap-2 text-left hover:underline"
+                    >
+                      <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 truncate">{att.nome_arquivo}</span>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {fmtBytes(att.tamanho_bytes)}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (confirm("Remover este anexo?")) removeAttachment.mutate(att);
+                        }}
+                        aria-label="Remover anexo"
+                        className="rounded p-1 hover:bg-muted"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum anexo. Envie tabelas técnicas, fotos do local, etc.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -548,7 +679,8 @@ function QuoteDetail() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Gere o PDF da proposta e anexe no seu programa de e-mail antes de enviar.
+              O link da proposta já está incluso na mensagem. Se preferir, você também pode baixar o
+              PDF e anexar manualmente.
             </p>
           </div>
           <DialogFooter>
@@ -558,6 +690,7 @@ function QuoteDetail() {
             <Button
               onClick={() => {
                 window.location.href = `mailto:${mail.to}?subject=${encodeURIComponent(mail.subject)}&body=${encodeURIComponent(mail.body)}`;
+                registrarEnvio("email");
                 setMailOpen(false);
               }}
             >

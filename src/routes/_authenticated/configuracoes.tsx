@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,8 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CONTACT_TYPES, OPP_STATUS, QUOTE_STATUS } from "@/lib/constants";
-import { fetchSettings } from "@/lib/api";
+import { brl } from "@/lib/format";
+import { fetchSalesGoals, fetchSettings, type SalesGoal } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -32,8 +41,13 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
 
 function SettingsPage() {
   const qc = useQueryClient();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [form, setForm] = useState<Record<string, string>>({});
+  const now = new Date();
+  const [ano, setAno] = useState(now.getFullYear());
+  const [mes, setMes] = useState(now.getMonth() + 1);
+  const [novoVendedor, setNovoVendedor] = useState("");
+  const [novaMeta, setNovaMeta] = useState("");
 
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
   const { data: users = [] } = useQuery({
@@ -55,6 +69,46 @@ function SettingsPage() {
       const { data } = await supabase.from("loss_reasons").select("*").order("nome");
       return (data ?? []) as { id: string; nome: string; ativo: boolean }[];
     },
+  });
+  const { data: goals = [] } = useQuery({
+    queryKey: ["sales-goals", ano, mes],
+    queryFn: () => fetchSalesGoals(ano, mes),
+  });
+
+  const saveGoal = useMutation({
+    mutationFn: async (goal: { responsavel: string; meta_valor: number; id?: string }) => {
+      if (goal.id) {
+        const { error } = await supabase
+          .from("sales_goals")
+          .update({ meta_valor: goal.meta_valor })
+          .eq("id", goal.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("sales_goals").insert({
+          responsavel: goal.responsavel,
+          ano,
+          mes,
+          meta_valor: goal.meta_valor,
+          created_by: user?.id ?? null,
+        } as never);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sales-goals", ano, mes] });
+      toast.success("Meta salva.");
+      setNovoVendedor("");
+      setNovaMeta("");
+    },
+    onError: (e: Error) => toast.error("Erro: " + e.message),
+  });
+
+  const removeGoal = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("sales_goals").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sales-goals", ano, mes] }),
   });
 
   useEffect(() => {
@@ -165,6 +219,84 @@ function SettingsPage() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base">Metas comerciais</CardTitle>
+            <div className="flex items-center gap-1">
+              <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+                <SelectTrigger className="h-8 w-32 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MESES.map((m, i) => (
+                    <SelectItem key={m} value={String(i + 1)}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                className="h-8 w-20 text-xs"
+                value={ano}
+                onChange={(e) => setAno(Number(e.target.value) || now.getFullYear())}
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {goals.length ? (
+              goals.map((g) => (
+                <GoalRow
+                  key={g.id}
+                  goal={g}
+                  admin={role === "admin"}
+                  onSave={saveGoal.mutate}
+                  onRemove={removeGoal.mutate}
+                />
+              ))
+            ) : (
+              <p className="text-muted-foreground">Nenhuma meta cadastrada para este período.</p>
+            )}
+            {role === "admin" ? (
+              <div className="flex items-end gap-2 border-t pt-3">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Vendedor</Label>
+                  <Input
+                    value={novoVendedor}
+                    onChange={(e) => setNovoVendedor(e.target.value)}
+                    placeholder="Nome do vendedor"
+                  />
+                </div>
+                <div className="w-32 space-y-1">
+                  <Label className="text-xs">Meta (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={novaMeta}
+                    onChange={(e) => setNovaMeta(e.target.value)}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  disabled={!novoVendedor.trim() || !novaMeta}
+                  onClick={() =>
+                    saveGoal.mutate({
+                      responsavel: novoVendedor.trim(),
+                      meta_valor: Number(novaMeta),
+                    })
+                  }
+                >
+                  Adicionar
+                </Button>
+              </div>
+            ) : (
+              <p className="pt-2 text-xs text-muted-foreground">
+                Somente administradores definem as metas.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">Usuários e permissões</CardTitle>
           </CardHeader>
@@ -188,7 +320,9 @@ function SettingsPage() {
             </p>
           </CardContent>
         </Card>
+      </div>
 
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Listas do sistema</CardTitle>
@@ -204,6 +338,63 @@ function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+const MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+function GoalRow({
+  goal,
+  admin,
+  onSave,
+  onRemove,
+}: {
+  goal: SalesGoal;
+  admin: boolean;
+  onSave: (v: { id: string; responsavel: string; meta_valor: number }) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [valor, setValor] = useState(String(goal.meta_valor));
+  return (
+    <div className="flex items-center justify-between gap-2 border-b py-1.5 last:border-0">
+      <span className="font-medium">{goal.responsavel}</span>
+      {admin ? (
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            step="0.01"
+            className="h-8 w-28 text-right text-xs"
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+            onBlur={() =>
+              onSave({ id: goal.id, responsavel: goal.responsavel, meta_valor: Number(valor || 0) })
+            }
+          />
+          <button
+            onClick={() => onRemove(goal.id)}
+            aria-label="Remover meta"
+            className="rounded p-1 hover:bg-muted"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          </button>
+        </div>
+      ) : (
+        <span className="text-muted-foreground">{brl(goal.meta_valor)}</span>
+      )}
     </div>
   );
 }

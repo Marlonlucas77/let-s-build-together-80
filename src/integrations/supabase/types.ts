@@ -504,6 +504,77 @@ export type Database = {
           },
         ];
       };
+      quote_attachments: {
+        Row: {
+          caminho: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          nome_arquivo: string;
+          quote_id: string;
+          tamanho_bytes: number | null;
+        };
+        Insert: {
+          caminho: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          nome_arquivo: string;
+          quote_id: string;
+          tamanho_bytes?: number | null;
+        };
+        Update: {
+          caminho?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          nome_arquivo?: string;
+          quote_id?: string;
+          tamanho_bytes?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quote_attachments_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sales_goals: {
+        Row: {
+          ano: number;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          mes: number;
+          meta_valor: number;
+          responsavel: string;
+          updated_at: string;
+        };
+        Insert: {
+          ano: number;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          mes: number;
+          meta_valor?: number;
+          responsavel: string;
+          updated_at?: string;
+        };
+        Update: {
+          ano?: number;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          mes?: number;
+          meta_valor?: number;
+          responsavel?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       settings: {
         Row: {
           condicoes_pagamento_padrao: string | null;
