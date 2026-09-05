@@ -14,16 +14,583 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string
+          id: string
+          opportunity_id: string | null
+          quote_id: string | null
+          tipo: string
+          usuario: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao: string
+          id?: string
+          opportunity_id?: string | null
+          quote_id?: string | null
+          tipo?: string
+          usuario?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          id?: string
+          opportunity_id?: string | null
+          quote_id?: string | null
+          tipo?: string
+          usuario?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome_fantasia: string | null
+          observacoes: string | null
+          razao_social: string
+          site: string | null
+          telefone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          razao_social: string
+          site?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          razao_social?: string
+          site?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          cargo: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_ups: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          observacao: string | null
+          opportunity_id: string | null
+          proximo_followup: string | null
+          quote_id: string | null
+          responsavel: string | null
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          observacao?: string | null
+          opportunity_id?: string | null
+          proximo_followup?: string | null
+          quote_id?: string | null
+          responsavel?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          observacao?: string | null
+          opportunity_id?: string | null
+          proximo_followup?: string | null
+          quote_id?: string | null
+          responsavel?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_ups_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_ups_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_ups_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loss_reasons: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      opportunities: {
+        Row: {
+          client_id: string
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          motivo_perda: string | null
+          numero: string | null
+          observacoes: string | null
+          origem: string | null
+          owner_id: string | null
+          prazo_desejado: string | null
+          probabilidade: number
+          produto_servico: string | null
+          responsavel: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          valor_estimado: number
+        }
+        Insert: {
+          client_id: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          motivo_perda?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          owner_id?: string | null
+          prazo_desejado?: string | null
+          probabilidade?: number
+          produto_servico?: string | null
+          responsavel?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          valor_estimado?: number
+        }
+        Update: {
+          client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          motivo_perda?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          owner_id?: string | null
+          prazo_desejado?: string | null
+          probabilidade?: number
+          produto_servico?: string | null
+          responsavel?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          valor_estimado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      quote_items: {
+        Row: {
+          codigo: string | null
+          created_at: string
+          desconto: number
+          descricao: string
+          id: string
+          ordem: number
+          quantidade: number
+          quote_id: string
+          total: number
+          unidade: string
+          valor_unitario: number
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string
+          desconto?: number
+          descricao: string
+          id?: string
+          ordem?: number
+          quantidade?: number
+          quote_id: string
+          total?: number
+          unidade?: string
+          valor_unitario?: number
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string
+          desconto?: number
+          descricao?: string
+          id?: string
+          ordem?: number
+          quantidade?: number
+          quote_id?: string
+          total?: number
+          unidade?: string
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          client_id: string
+          condicoes_pagamento: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          desconto: number
+          id: string
+          numero: string | null
+          observacoes: string | null
+          opportunity_id: string | null
+          prazo_entrega: string | null
+          responsavel: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+          validade: string | null
+          versao: number
+        }
+        Insert: {
+          client_id: string
+          condicoes_pagamento?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          desconto?: number
+          id?: string
+          numero?: string | null
+          observacoes?: string | null
+          opportunity_id?: string | null
+          prazo_entrega?: string | null
+          responsavel?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          validade?: string | null
+          versao?: number
+        }
+        Update: {
+          client_id?: string
+          condicoes_pagamento?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          desconto?: number
+          id?: string
+          numero?: string | null
+          observacoes?: string | null
+          opportunity_id?: string | null
+          prazo_entrega?: string | null
+          responsavel?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          validade?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settings: {
+        Row: {
+          condicoes_pagamento_padrao: string | null
+          empresa_cnpj: string | null
+          empresa_email: string | null
+          empresa_endereco: string | null
+          empresa_nome: string
+          empresa_site: string | null
+          empresa_telefone: string | null
+          id: string
+          logo_url: string | null
+          proposta_texto_abertura: string | null
+          proposta_texto_rodape: string | null
+          updated_at: string
+          validade_padrao_dias: number
+        }
+        Insert: {
+          condicoes_pagamento_padrao?: string | null
+          empresa_cnpj?: string | null
+          empresa_email?: string | null
+          empresa_endereco?: string | null
+          empresa_nome?: string
+          empresa_site?: string | null
+          empresa_telefone?: string | null
+          id?: string
+          logo_url?: string | null
+          proposta_texto_abertura?: string | null
+          proposta_texto_rodape?: string | null
+          updated_at?: string
+          validade_padrao_dias?: number
+        }
+        Update: {
+          condicoes_pagamento_padrao?: string | null
+          empresa_cnpj?: string | null
+          empresa_email?: string | null
+          empresa_endereco?: string | null
+          empresa_nome?: string
+          empresa_site?: string | null
+          empresa_telefone?: string | null
+          id?: string
+          logo_url?: string | null
+          proposta_texto_abertura?: string | null
+          proposta_texto_rodape?: string | null
+          updated_at?: string
+          validade_padrao_dias?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "comercial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +717,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "comercial"],
+    },
   },
 } as const
