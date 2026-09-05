@@ -16,6 +16,7 @@ import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedOportunidadesRouteImport } from './routes/_authenticated/oportunidades'
 import { Route as AuthenticatedOrcamentosRouteImport } from './routes/_authenticated/orcamentos'
+import { Route as PropostaIdRouteImport } from './routes/proposta.$id'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedOportunidadesIdRouteImport } from './routes/_authenticated/oportunidades.$id'
 
@@ -54,6 +55,11 @@ const AuthenticatedOrcamentosRoute = AuthenticatedOrcamentosRouteImport.update({
   path: '/orcamentos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const PropostaIdRoute = PropostaIdRouteImport.update({
+  id: '/proposta/$id',
+  path: '/proposta/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
   '/orcamentos': typeof AuthenticatedOrcamentosRoute
+  '/proposta/$id': typeof PropostaIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
 }
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
   '/orcamentos': typeof AuthenticatedOrcamentosRoute
+  '/proposta/$id': typeof PropostaIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
 }
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
   '/_authenticated/orcamentos': typeof AuthenticatedOrcamentosRoute
+  '/proposta/$id': typeof PropostaIdRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/_authenticated/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
 }
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/oportunidades'
     | '/orcamentos'
+    | '/proposta/$id'
     | '/clientes/$id'
     | '/oportunidades/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/oportunidades'
     | '/orcamentos'
+    | '/proposta/$id'
     | '/clientes/$id'
     | '/oportunidades/$id'
   id:
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/oportunidades'
     | '/_authenticated/orcamentos'
+    | '/proposta/$id'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/oportunidades/$id'
   fileRoutesById: FileRoutesById
@@ -136,6 +148,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PropostaIdRoute: typeof PropostaIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/orcamentos'
       preLoaderRoute: typeof AuthenticatedOrcamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/proposta/$id': {
+      id: '/proposta/$id'
+      path: '/proposta/$id'
+      fullPath: '/proposta/$id'
+      preLoaderRoute: typeof PropostaIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/clientes/$id': {
       id: '/_authenticated/clientes/$id'
@@ -254,6 +274,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PropostaIdRoute: PropostaIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
