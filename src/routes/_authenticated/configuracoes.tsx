@@ -19,7 +19,13 @@ import {
 } from "@/components/ui/select";
 import { CONTACT_TYPES, OPP_STATUS, QUOTE_STATUS } from "@/lib/constants";
 import { brl } from "@/lib/format";
-import { fetchSalesGoals, fetchSettings, type SalesGoal } from "@/lib/api";
+import {
+  fetchProducts,
+  fetchSalesGoals,
+  fetchSettings,
+  type Product,
+  type SalesGoal,
+} from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -73,6 +79,57 @@ function SettingsPage() {
   const { data: goals = [] } = useQuery({
     queryKey: ["sales-goals", ano, mes],
     queryFn: () => fetchSalesGoals(ano, mes),
+  });
+  const { data: products = [] } = useQuery({
+    queryKey: ["products", "all"],
+    queryFn: () => fetchProducts(false),
+  });
+  const [novoProduto, setNovoProduto] = useState({
+    codigo: "",
+    descricao: "",
+    unidade: "un",
+    preco: "",
+  });
+
+  const saveProduct = useMutation({
+    mutationFn: async (p: {
+      codigo: string;
+      descricao: string;
+      unidade: string;
+      preco: string;
+    }) => {
+      if (!p.descricao.trim()) throw new Error("Informe a descrição.");
+      const { error } = await supabase.from("products").insert({
+        codigo: p.codigo.trim() || null,
+        descricao: p.descricao.trim(),
+        unidade: p.unidade.trim() || "un",
+        preco_unitario: Number(p.preco || 0),
+        created_by: user?.id ?? null,
+      } as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Item adicionado ao catálogo.");
+      setNovoProduto({ codigo: "", descricao: "", unidade: "un", preco: "" });
+    },
+    onError: (e: Error) => toast.error("Erro: " + e.message),
+  });
+
+  const toggleProduct = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase.from("products").update({ ativo }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+
+  const removeProduct = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });
 
   const saveGoal = useMutation({
@@ -335,6 +392,89 @@ function SettingsPage() {
             <List title="Tipos de contato" items={CONTACT_TYPES.map((c) => c.label)} />
             <List title="Status de oportunidade" items={OPP_STATUS.map((s) => s.label)} />
             <List title="Status de orçamento" items={QUOTE_STATUS.map((s) => s.label)} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Catálogo de produtos/serviços</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {products.length ? (
+              products.map((p) => (
+                <div
+                  key={p.id}
+                  className={
+                    "flex items-center justify-between gap-2 border-b py-1.5 last:border-0 " +
+                    (p.ativo ? "" : "opacity-50")
+                  }
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">
+                      {p.codigo ? `${p.codigo} · ` : ""}
+                      {p.descricao}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.unidade} · {brl(p.preco_unitario)}
+                    </p>
+                  </div>
+                  {role === "admin" ? (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        onClick={() => toggleProduct.mutate({ id: p.id, ativo: !p.ativo })}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        {p.ativo ? "Desativar" : "Ativar"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm("Remover este item do catálogo?")) removeProduct.mutate(p.id);
+                        }}
+                        aria-label="Remover item"
+                        className="rounded p-1 hover:bg-muted"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground">Catálogo vazio.</p>
+            )}
+            {role === "admin" ? (
+              <div className="grid gap-2 border-t pt-3 sm:grid-cols-[80px_1fr_70px_100px_auto]">
+                <Input
+                  placeholder="Código"
+                  className="h-8 text-xs"
+                  value={novoProduto.codigo}
+                  onChange={(e) => setNovoProduto({ ...novoProduto, codigo: e.target.value })}
+                />
+                <Input
+                  placeholder="Descrição"
+                  className="h-8 text-xs"
+                  value={novoProduto.descricao}
+                  onChange={(e) => setNovoProduto({ ...novoProduto, descricao: e.target.value })}
+                />
+                <Input
+                  placeholder="Un."
+                  className="h-8 text-xs"
+                  value={novoProduto.unidade}
+                  onChange={(e) => setNovoProduto({ ...novoProduto, unidade: e.target.value })}
+                />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Preço"
+                  className="h-8 text-xs"
+                  value={novoProduto.preco}
+                  onChange={(e) => setNovoProduto({ ...novoProduto, preco: e.target.value })}
+                />
+                <Button size="sm" className="h-8" onClick={() => saveProduct.mutate(novoProduto)}>
+                  Adicionar
+                </Button>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>

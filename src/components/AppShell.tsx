@@ -20,6 +20,7 @@ import { useAuth, userName } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AlertsBell } from "@/components/AlertsBell";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -130,7 +131,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="hidden sm:block">Gestão de Orçamentos e Follow-up Comercial</span>
             </div>
           </div>
-          <AlertsBell />
+          <div className="flex items-center gap-2">
+            <GlobalSearch />
+            <AlertsBell />
+          </div>
         </header>
         <main className="p-4 sm:p-6">{children}</main>
       </div>

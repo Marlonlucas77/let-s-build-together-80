@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { QUOTE_STATUS } from "@/lib/constants";
 import { brl, csvDownload, fmtDate, onlyDigits, toInputDate } from "@/lib/format";
+import { SavedFilters } from "@/components/SavedFilters";
+import { SortableTh, applySort, toggleSort, type SortState } from "@/components/SortableTh";
 import {
   fetchClients,
   fetchContacts,
@@ -35,6 +37,8 @@ import {
   type Quote,
 } from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
+
+type SortKey = "numero" | "cliente" | "valor" | "data" | "validade" | "status";
 
 type Search = { nova?: string | undefined };
 
@@ -68,6 +72,7 @@ function QuotesPage() {
   const [atrasado, setAtrasado] = useState(false);
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
+  const [sort, setSort] = useState<SortState<SortKey>>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
@@ -139,6 +144,27 @@ function QuotesPage() {
     });
   }, [rows, search, statusFilter, de, ate, atrasado]);
 
+  const sorted = useMemo(
+    () =>
+      applySort(filtered, sort, (q, key) => {
+        switch (key) {
+          case "numero":
+            return q.numero;
+          case "cliente":
+            return q.clients?.razao_social;
+          case "valor":
+            return Number(q.total);
+          case "data":
+            return q.data;
+          case "validade":
+            return q.validade;
+          case "status":
+            return q.status;
+        }
+      }),
+    [filtered, sort],
+  );
+
   const create = useMutation({
     mutationFn: async () => {
       const responsavel = form["responsavel"] || userName(profile, user);
@@ -181,7 +207,7 @@ function QuotesPage() {
   function exportCsv() {
     csvDownload("orcamentos.csv", [
       ["Número", "Cliente", "Responsável", "Valor", "Data", "Validade", "Status"],
-      ...filtered.map((q) => [
+      ...sorted.map((q) => [
         q.numero ?? "",
         q.clients?.razao_social ?? "",
         q.responsavel ?? "",
@@ -237,7 +263,7 @@ function QuotesPage() {
           <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} />
           <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
         </div>
-        <label className="flex items-center gap-2 text-sm md:col-span-4">
+        <label className="flex items-center gap-2 text-sm md:col-span-3">
           <input
             type="checkbox"
             checked={atrasado}
@@ -246,6 +272,19 @@ function QuotesPage() {
           />
           Somente com follow-up atrasado
         </label>
+        <div className="md:col-span-1 md:flex md:justify-end">
+          <SavedFilters
+            namespace="orcamentos"
+            currentFilters={{ search, statusFilter, atrasado, de, ate }}
+            onApply={(f) => {
+              setSearch(f.search);
+              setStatusFilter(f.statusFilter);
+              setAtrasado(f.atrasado);
+              setDe(f.de);
+              setAte(f.ate);
+            }}
+          />
+        </div>
       </div>
 
       <Card>
@@ -254,18 +293,52 @@ function QuotesPage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Número</th>
-                  <th className="px-4 py-3">Cliente</th>
+                  <SortableTh
+                    label="Número"
+                    sortKey="numero"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                  />
+                  <SortableTh
+                    label="Cliente"
+                    sortKey="cliente"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                  />
                   <th className="hidden px-4 py-3 lg:table-cell">Responsável</th>
-                  <th className="px-4 py-3 text-right">Valor</th>
-                  <th className="hidden px-4 py-3 md:table-cell">Data</th>
-                  <th className="hidden px-4 py-3 lg:table-cell">Validade</th>
+                  <SortableTh
+                    label="Valor"
+                    sortKey="valor"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="text-right"
+                    align="right"
+                  />
+                  <SortableTh
+                    label="Data"
+                    sortKey="data"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="hidden md:table-cell"
+                  />
+                  <SortableTh
+                    label="Validade"
+                    sortKey="validade"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                    className="hidden lg:table-cell"
+                  />
                   <th className="hidden px-4 py-3 xl:table-cell">Próximo follow-up</th>
-                  <th className="px-4 py-3">Status</th>
+                  <SortableTh
+                    label="Status"
+                    sortKey="status"
+                    sort={sort}
+                    onSort={(k) => setSort(toggleSort(sort, k))}
+                  />
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((q) => {
+                {sorted.map((q) => {
                   const proximo = q.follow_ups
                     .map((f) => f.proximo_followup)
                     .filter(Boolean)
@@ -293,7 +366,7 @@ function QuotesPage() {
                     </tr>
                   );
                 })}
-                {!filtered.length ? (
+                {!sorted.length ? (
                   <tr>
                     <td className="px-4 py-6 text-muted-foreground" colSpan={8}>
                       Nenhum orçamento encontrado.

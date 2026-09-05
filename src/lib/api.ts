@@ -103,6 +103,23 @@ export type SalesGoal = {
   meta_valor: number;
 };
 
+export type Product = {
+  id: string;
+  codigo: string | null;
+  descricao: string;
+  unidade: string;
+  preco_unitario: number;
+  ativo: boolean;
+};
+
+export async function fetchProducts(onlyActive = true) {
+  let q = supabase.from("products").select("*").order("descricao");
+  if (onlyActive) q = q.eq("ativo", true);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as Product[];
+}
+
 export type QuoteAttachment = {
   id: string;
   quote_id: string;

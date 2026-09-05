@@ -345,6 +345,42 @@ export type Database = {
           },
         ];
       };
+      products: {
+        Row: {
+          ativo: boolean;
+          codigo: string | null;
+          created_at: string;
+          created_by: string | null;
+          descricao: string;
+          id: string;
+          preco_unitario: number;
+          unidade: string;
+          updated_at: string;
+        };
+        Insert: {
+          ativo?: boolean;
+          codigo?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          descricao: string;
+          id?: string;
+          preco_unitario?: number;
+          unidade?: string;
+          updated_at?: string;
+        };
+        Update: {
+          ativo?: boolean;
+          codigo?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          descricao?: string;
+          id?: string;
+          preco_unitario?: number;
+          unidade?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;

@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Copy,
   FileText,
+  GitCompare,
   Mail,
   MessageCircle,
   Paperclip,
@@ -38,10 +39,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { QUOTE_STATUS, contactTypeLabel, quoteStatusLabel } from "@/lib/constants";
-import { brl, fmtDate, fmtDateTime, fmtBytes, toInputDate, whatsappLink } from "@/lib/format";
+import { brl, fmtBytes, fmtDate, fmtDateTime, toInputDate, whatsappLink } from "@/lib/format";
 import {
   ATTACHMENTS_BUCKET,
+  fetchProducts,
   fetchQuoteAttachments,
   logActivity,
   recalcItem,
@@ -123,6 +126,13 @@ function QuoteDetail() {
     queryKey: ["quote-attachments", id],
     queryFn: () => fetchQuoteAttachments(id),
   });
+
+  const { data: catalog = [] } = useQuery({
+    queryKey: ["products", "active"],
+    queryFn: () => fetchProducts(true),
+  });
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
 
   const uploadAttachment = useMutation({
     mutationFn: async (file: File) => {
@@ -327,6 +337,40 @@ function QuoteDetail() {
     onError: (e: Error) => toast.error("Erro: " + e.message),
   });
 
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareWith, setCompareWith] = useState<string | null>(null);
+
+  const { data: versions = [] } = useQuery({
+    queryKey: ["quote-versions", quote?.opportunity_id],
+    enabled: !!quote?.opportunity_id,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("quotes")
+        .select("id, numero, versao, total, subtotal, desconto, validade, status, created_at")
+        .eq("opportunity_id", quote!.opportunity_id as string)
+        .order("versao");
+      if (error) throw error;
+      return rows;
+    },
+  });
+
+  const { data: compareItems = [] } = useQuery({
+    queryKey: ["quote-items", compareWith],
+    enabled: !!compareWith,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("quote_items")
+        .select("*")
+        .eq("quote_id", compareWith!)
+        .order("ordem");
+      if (error) throw error;
+      return (rows ?? []) as QuoteItem[];
+    },
+  });
+
+  const outrasVersoes = versions.filter((v) => v.id !== id);
+  const versaoComparada = versions.find((v) => v.id === compareWith);
+
   const removeQuote = useMutation({
     mutationFn: async () => {
       await supabase.from("quote_items").delete().eq("quote_id", id);
@@ -397,6 +441,11 @@ function QuoteDetail() {
             <Button variant="outline" onClick={() => duplicate.mutate()}>
               <Copy className="mr-2 h-4 w-4" /> Nova versão
             </Button>
+            {outrasVersoes.length ? (
+              <Button variant="outline" onClick={() => setCompareOpen(true)}>
+                <GitCompare className="mr-2 h-4 w-4" /> Comparar versões
+              </Button>
+            ) : null}
             <Button asChild>
               <Link to="/proposta/$id" params={{ id }} target="_blank">
                 <FileText className="mr-2 h-4 w-4" /> Gerar proposta PDF
@@ -418,13 +467,66 @@ function QuoteDetail() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
             <CardTitle className="text-base">Itens do orçamento</CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => saveItem.mutate({ descricao: "Novo item", quantidade: 1 })}
-            >
-              <Plus className="mr-1 h-4 w-4" /> Adicionar item
-            </Button>
+            <div className="flex gap-2">
+              <Popover open={catalogOpen} onOpenChange={setCatalogOpen}>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <FileText className="mr-1 h-4 w-4" /> Do catálogo
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-2" align="end">
+                  <Input
+                    autoFocus
+                    placeholder="Buscar produto/serviço..."
+                    className="mb-2 h-8 text-sm"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                  />
+                  <div className="max-h-64 space-y-1 overflow-y-auto">
+                    {catalog
+                      .filter((p) =>
+                        (p.codigo + " " + p.descricao)
+                          .toLowerCase()
+                          .includes(catalogSearch.toLowerCase()),
+                      )
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            saveItem.mutate({
+                              descricao: p.descricao,
+                              codigo: p.codigo,
+                              unidade: p.unidade,
+                              quantidade: 1,
+                              valor_unitario: p.preco_unitario,
+                            });
+                            setCatalogOpen(false);
+                            setCatalogSearch("");
+                          }}
+                          className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                        >
+                          <span className="font-medium">{p.descricao}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {p.unidade} · {brl(p.preco_unitario)}
+                          </span>
+                        </button>
+                      ))}
+                    {!catalog.length ? (
+                      <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+                        Catálogo vazio. Cadastre em Configurações.
+                      </p>
+                    ) : null}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => saveItem.mutate({ descricao: "Novo item", quantidade: 1 })}
+              >
+                <Plus className="mr-1 h-4 w-4" /> Adicionar item
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {items.map((it) => (
@@ -653,6 +755,56 @@ function QuoteDetail() {
         clientId={quote.client_id}
       />
 
+      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Comparar versões do orçamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={compareWith ?? ""} onValueChange={setCompareWith}>
+              <SelectTrigger>
+                <SelectValue placeholder="Escolha uma versão para comparar" />
+              </SelectTrigger>
+              <SelectContent>
+                {outrasVersoes.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    Versão {v.versao} · {v.numero}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {versaoComparada ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <VersionSummary
+                  label={`Versão ${quote.versao} (atual) · ${quote.numero}`}
+                  subtotal={quote.subtotal}
+                  desconto={quote.desconto}
+                  total={quote.total}
+                  validade={quote.validade}
+                  status={quote.status}
+                  items={items}
+                />
+                <VersionSummary
+                  label={`Versão ${versaoComparada.versao} · ${versaoComparada.numero}`}
+                  subtotal={versaoComparada.subtotal}
+                  desconto={versaoComparada.desconto}
+                  total={versaoComparada.total}
+                  validade={versaoComparada.validade}
+                  status={versaoComparada.status}
+                  items={compareItems}
+                />
+              </div>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCompareOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={mailOpen} onOpenChange={setMailOpen}>
         <DialogContent>
           <DialogHeader>
@@ -766,6 +918,64 @@ function ItemRow({
         <button onClick={onRemove} aria-label="Remover item" className="rounded p-1 hover:bg-muted">
           <Trash2 className="h-4 w-4 text-destructive" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+function VersionSummary({
+  label,
+  subtotal,
+  desconto,
+  total,
+  validade,
+  status,
+  items,
+}: {
+  label: string;
+  subtotal: number;
+  desconto: number;
+  total: number;
+  validade: string | null;
+  status: string;
+  items: QuoteItem[];
+}) {
+  return (
+    <div className="rounded-md border p-3 text-sm">
+      <p className="mb-2 font-semibold">{label}</p>
+      <div className="space-y-1 text-xs">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Status</span>
+          <span>{quoteStatusLabel(status)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Validade</span>
+          <span>{fmtDate(validade)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span>{brl(subtotal)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Desconto</span>
+          <span>{brl(desconto)}</span>
+        </div>
+        <div className="flex justify-between font-semibold">
+          <span>Total</span>
+          <span>{brl(total)}</span>
+        </div>
+      </div>
+      <div className="mt-3 space-y-1 border-t pt-2">
+        {items.length ? (
+          items.map((it) => (
+            <div key={it.id} className="flex justify-between gap-2 text-xs">
+              <span className="min-w-0 truncate">{it.descricao}</span>
+              <span className="shrink-0 text-muted-foreground">{brl(it.total)}</span>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-muted-foreground">Sem itens.</p>
+        )}
       </div>
     </div>
   );

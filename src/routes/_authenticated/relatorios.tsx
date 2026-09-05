@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Download, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl, csvDownload } from "@/lib/format";
 import type { FollowUp, Opportunity, Quote } from "@/lib/api";
@@ -27,6 +30,9 @@ export const Route = createFileRoute("/_authenticated/relatorios")({
 });
 
 function ReportsPage() {
+  const [dataDe, setDataDe] = useState("");
+  const [dataAte, setDataAte] = useState("");
+
   const { data } = useQuery({
     queryKey: ["reports"],
     queryFn: async () => {
@@ -43,9 +49,29 @@ function ReportsPage() {
     },
   });
 
-  const quotes = useMemo(() => data?.quotes ?? [], [data]);
-  const opps = useMemo(() => data?.opps ?? [], [data]);
-  const followups = useMemo(() => data?.followups ?? [], [data]);
+  const noPeriodo = useCallback(
+    (dateStr: string) => {
+      if (!dataDe && !dataAte) return true;
+      const d = dateStr.slice(0, 10);
+      if (dataDe && d < dataDe) return false;
+      if (dataAte && d > dataAte) return false;
+      return true;
+    },
+    [dataDe, dataAte],
+  );
+
+  const quotes = useMemo(
+    () => (data?.quotes ?? []).filter((q) => noPeriodo(q.data)),
+    [data, noPeriodo],
+  );
+  const opps = useMemo(
+    () => (data?.opps ?? []).filter((o) => noPeriodo(o.created_at)),
+    [data, noPeriodo],
+  );
+  const followups = useMemo(
+    () => (data?.followups ?? []).filter((f) => noPeriodo(f.data)),
+    [data, noPeriodo],
+  );
 
   const resumo = useMemo(() => {
     const aprovados = quotes.filter((q) => q.status === "aprovado");
@@ -116,31 +142,64 @@ function ReportsPage() {
         title="Relatórios"
         subtitle="Resultados comerciais consolidados"
         actions={
-          <div className="no-print flex gap-2">
+          <div className="no-print flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">De</Label>
+              <Input
+                type="date"
+                className="h-8 w-36 text-xs"
+                value={dataDe}
+                onChange={(e) => setDataDe(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Até</Label>
+              <Input
+                type="date"
+                className="h-8 w-36 text-xs"
+                value={dataAte}
+                onChange={(e) => setDataAte(e.target.value)}
+              />
+            </div>
+            {dataDe || dataAte ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDataDe("");
+                  setDataAte("");
+                }}
+              >
+                Limpar período
+              </Button>
+            ) : null}
             <Button variant="outline" onClick={() => window.print()}>
               <Printer className="mr-2 h-4 w-4" /> Imprimir / PDF
             </Button>
             <Button
               variant="outline"
               onClick={() =>
-                csvDownload("relatorio-vendedores.csv", [
+                csvDownload(
+                  `relatorio-vendedores${dataDe ? `-${dataDe}` : ""}${dataAte ? `_${dataAte}` : ""}.csv`,
                   [
-                    "Responsável",
-                    "Oportunidades",
-                    "Orçamentos",
-                    "Aprovados",
-                    "Perdidos",
-                    "Valor vendido",
+                    [
+                      "Responsável",
+                      "Oportunidades",
+                      "Orçamentos",
+                      "Aprovados",
+                      "Perdidos",
+                      "Valor vendido",
+                    ],
+                    ...porVendedor.map(([k, v]) => [
+                      k,
+                      v.oportunidades,
+                      v.orcamentos,
+                      v.aprovados,
+                      v.perdidos,
+                      v.valor.toFixed(2),
+                    ]),
                   ],
-                  ...porVendedor.map(([k, v]) => [
-                    k,
-                    v.oportunidades,
-                    v.orcamentos,
-                    v.aprovados,
-                    v.perdidos,
-                    v.valor.toFixed(2),
-                  ]),
-                ])
+                )
               }
             >
               <Download className="mr-2 h-4 w-4" /> CSV
@@ -176,6 +235,29 @@ function ReportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-base">Valor vendido por vendedor</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          {porVendedor.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porVendedor.map(([k, v]) => ({ nome: k, valor: v.valor }))}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="nome" tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={(v) => brl(v)} width={90} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => brl(v)} />
+                <Bar dataKey="valor" name="Valor vendido" fill="#2563eb" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Sem dados aprovados no período selecionado.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mt-4">
         <CardHeader>
