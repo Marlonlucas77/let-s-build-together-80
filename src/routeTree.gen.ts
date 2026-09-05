@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedOportunidadesRouteImport } from './routes/_authenticated/oportunidades'
+import { Route as AuthenticatedOrcamentosRouteImport } from './routes/_authenticated/orcamentos'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedOportunidadesIdRouteImport } from './routes/_authenticated/oportunidades.$id'
 
@@ -48,6 +49,11 @@ const AuthenticatedOportunidadesRoute =
     path: '/oportunidades',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrcamentosRoute = AuthenticatedOrcamentosRouteImport.update({
+  id: '/orcamentos',
+  path: '/orcamentos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
+  '/orcamentos': typeof AuthenticatedOrcamentosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
+  '/orcamentos': typeof AuthenticatedOrcamentosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
+  '/_authenticated/orcamentos': typeof AuthenticatedOrcamentosRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/_authenticated/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
 }
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/dashboard'
     | '/oportunidades'
+    | '/orcamentos'
     | '/clientes/$id'
     | '/oportunidades/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/dashboard'
     | '/oportunidades'
+    | '/orcamentos'
     | '/clientes/$id'
     | '/oportunidades/$id'
   id:
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes'
     | '/_authenticated/dashboard'
     | '/_authenticated/oportunidades'
+    | '/_authenticated/orcamentos'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/oportunidades/$id'
   fileRoutesById: FileRoutesById
@@ -170,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOportunidadesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/orcamentos': {
+      id: '/_authenticated/orcamentos'
+      path: '/orcamentos'
+      fullPath: '/orcamentos'
+      preLoaderRoute: typeof AuthenticatedOrcamentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clientes/$id': {
       id: '/_authenticated/clientes/$id'
       path: '/$id'
@@ -218,12 +237,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedOportunidadesRoute: typeof AuthenticatedOportunidadesRouteWithChildren
+  AuthenticatedOrcamentosRoute: typeof AuthenticatedOrcamentosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesRoute: AuthenticatedClientesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedOportunidadesRoute: AuthenticatedOportunidadesRouteWithChildren,
+  AuthenticatedOrcamentosRoute: AuthenticatedOrcamentosRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
