@@ -61,10 +61,12 @@ export function GlobalSearch() {
     },
   });
 
-  function go(to: string, params: { id: string }) {
+  type Destino = "/clientes/$id" | "/oportunidades/$id" | "/orcamentos/$id";
+
+  function go(to: Destino, params: { id: string }) {
     setOpen(false);
     setTerm("");
-    navigate({ to, params } as never);
+    navigate({ to, params });
   }
 
   const semResultado =
