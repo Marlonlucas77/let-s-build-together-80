@@ -118,10 +118,10 @@ function ClientsPage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.razao_social || form.razao_social.trim().length < 3)
-      return toast.error("Informe a razão social.");
+      { toast.error("Informe a razão social."); return; }
     if (form.cnpj && onlyDigits(form.cnpj).length > 0 && !validCNPJ(form.cnpj))
-      return toast.error("CNPJ inválido.");
-    if (form.email && !validEmail(form.email)) return toast.error("E-mail inválido.");
+      { toast.error("CNPJ inválido."); return; }
+    if (form.email && !validEmail(form.email)) { toast.error("E-mail inválido."); return; }
     save.mutate(form);
   }
 

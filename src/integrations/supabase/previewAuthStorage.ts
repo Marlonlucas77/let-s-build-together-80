@@ -31,12 +31,12 @@ export function brokeredPreviewStorage() {
   const TIMEOUT = 2000;
   const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-  const request = (type: string, key: string, value?: string): Promise<{ ok: boolean; value?: string | null } | null> =>
+  const request = (type: string, key: string, value?: string): Promise<{ ok: boolean; value?: string | null | undefined } | null> =>
     new Promise((resolve) => {
       const requestId = newId();
       let done = false;
       let timer: ReturnType<typeof setTimeout>;
-      const finish = (r: { ok: boolean; value?: string | null } | null) => {
+      const finish = (r: { ok: boolean; value?: string | null | undefined } | null) => {
         if (done) return;
         done = true;
         clearTimeout(timer);

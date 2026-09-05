@@ -88,7 +88,7 @@ export function FollowUpDialog({
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!observacao.trim()) return toast.error("Descreva o contato realizado.");
+            if (!observacao.trim()) { toast.error("Descreva o contato realizado."); return; }
             save.mutate();
           }}
         >

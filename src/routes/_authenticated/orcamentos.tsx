@@ -310,7 +310,7 @@ function QuotesPage() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!form["client_id"]) return toast.error("Selecione o cliente.");
+              if (!form["client_id"]) { toast.error("Selecione o cliente."); return; }
               create.mutate();
             }}
           >
