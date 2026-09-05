@@ -63,10 +63,12 @@ function KanbanPage() {
     mutationFn: async ({
       id,
       status,
+      statusDe,
       clientId,
     }: {
       id: string;
       status: string;
+      statusDe: string;
       clientId: string;
     }) => {
       const { error } = await supabase.from("opportunities").update({ status }).eq("id", id);
@@ -77,6 +79,8 @@ function KanbanPage() {
         tipo: "status",
         descricao: `Etapa alterada para ${oppStatusLabel(status)} no Kanban.`,
         usuario: userName(profile, user),
+        status_de: statusDe,
+        status_para: status,
       });
     },
     onSuccess: () => {
@@ -105,7 +109,12 @@ function KanbanPage() {
                 onDrop={() => {
                   const card = cards.find((c) => c.id === dragging);
                   if (card && card.status !== col.status)
-                    move.mutate({ id: card.id, status: col.status, clientId: card.client_id });
+                    move.mutate({
+                      id: card.id,
+                      status: col.status,
+                      statusDe: card.status,
+                      clientId: card.client_id,
+                    });
                   setDragging(null);
                 }}
               >

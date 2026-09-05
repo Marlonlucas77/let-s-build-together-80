@@ -115,6 +115,8 @@ function OpportunityDetail() {
         tipo: "status",
         descricao: `Status alterado para ${oppStatusLabel(status)}${motivo_perda ? ` (motivo: ${motivo_perda})` : ""}.`,
         usuario: userName(profile, user),
+        status_de: data?.opp?.status,
+        status_para: status,
       });
     },
     onSuccess: () => {

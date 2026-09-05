@@ -17,6 +17,8 @@ export type Database = {
           id: string;
           opportunity_id: string | null;
           quote_id: string | null;
+          status_de: string | null;
+          status_para: string | null;
           tipo: string;
           usuario: string | null;
         };
@@ -28,6 +30,8 @@ export type Database = {
           id?: string;
           opportunity_id?: string | null;
           quote_id?: string | null;
+          status_de?: string | null;
+          status_para?: string | null;
           tipo?: string;
           usuario?: string | null;
         };
@@ -39,6 +43,8 @@ export type Database = {
           id?: string;
           opportunity_id?: string | null;
           quote_id?: string | null;
+          status_de?: string | null;
+          status_para?: string | null;
           tipo?: string;
           usuario?: string | null;
         };
@@ -65,6 +71,39 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      category_goals: {
+        Row: {
+          ano: number;
+          categoria: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          mes: number;
+          meta_valor: number;
+          updated_at: string;
+        };
+        Insert: {
+          ano: number;
+          categoria: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          mes: number;
+          meta_valor?: number;
+          updated_at?: string;
+        };
+        Update: {
+          ano?: number;
+          categoria?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          mes?: number;
+          meta_valor?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       clients: {
         Row: {

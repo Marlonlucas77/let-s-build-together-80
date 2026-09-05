@@ -188,6 +188,41 @@ function Dashboard() {
     .filter((q) => q.status === "aprovado")
     .reduce((s, q) => s + Number(q.total), 0);
 
+  function periodStats(from: Date, to: Date) {
+    const fromStr = from.toISOString().slice(0, 10);
+    const toStr = to.toISOString().slice(0, 10);
+    const oppsNoPeriodo = opps.filter((o) => {
+      const d = o.created_at.slice(0, 10);
+      return d >= fromStr && d <= toStr;
+    });
+    const quotesNoPeriodo = quotes.filter((q) => q.data >= fromStr && q.data <= toStr);
+    const aprovados = quotesNoPeriodo.filter((q) => q.status === "aprovado");
+    const perdidos = quotesNoPeriodo.filter((q) => q.status === "perdido");
+    const finalizados = aprovados.length + perdidos.length;
+    return {
+      oportunidades: oppsNoPeriodo.length,
+      valorAprovado: aprovados.reduce((s, q) => s + Number(q.total), 0),
+      conversao: finalizados ? (aprovados.length / finalizados) * 100 : 0,
+    };
+  }
+
+  const inicioMesAtual = new Date(anoAtual, mesAtual - 1, 1);
+  const fimMesAtual = now;
+  const inicioMesAnterior = new Date(anoAtual, mesAtual - 2, 1);
+  const fimMesAnterior = new Date(anoAtual, mesAtual - 1, 0);
+  const inicioAnoAtual = new Date(anoAtual, 0, 1);
+  const inicioAnoAnterior = new Date(anoAtual - 1, 0, 1);
+  const fimAnoAnterior = new Date(anoAtual - 1, now.getMonth(), now.getDate());
+
+  const comparativoMes = {
+    atual: periodStats(inicioMesAtual, fimMesAtual),
+    anterior: periodStats(inicioMesAnterior, fimMesAnterior),
+  };
+  const comparativoAno = {
+    atual: periodStats(inicioAnoAtual, now),
+    anterior: periodStats(inicioAnoAnterior, fimAnoAnterior),
+  };
+
   const funil = [
     { etapa: "Solicitações", qtd: opps.length },
     { etapa: "Orçamentos", qtd: quotes.length },
@@ -380,6 +415,60 @@ function Dashboard() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">Este mês vs. mês anterior</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <CompareRow
+              label="Valor aprovado"
+              atual={comparativoMes.atual.valorAprovado}
+              anterior={comparativoMes.anterior.valorAprovado}
+              format={brl}
+            />
+            <CompareRow
+              label="Oportunidades criadas"
+              atual={comparativoMes.atual.oportunidades}
+              anterior={comparativoMes.anterior.oportunidades}
+            />
+            <CompareRow
+              label="Taxa de conversão"
+              atual={comparativoMes.atual.conversao}
+              anterior={comparativoMes.anterior.conversao}
+              format={(v) => `${v.toFixed(1)}%`}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {anoAtual} vs. {anoAtual - 1} (mesmo período do ano)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <CompareRow
+              label="Valor aprovado"
+              atual={comparativoAno.atual.valorAprovado}
+              anterior={comparativoAno.anterior.valorAprovado}
+              format={brl}
+            />
+            <CompareRow
+              label="Oportunidades criadas"
+              atual={comparativoAno.atual.oportunidades}
+              anterior={comparativoAno.anterior.oportunidades}
+            />
+            <CompareRow
+              label="Taxa de conversão"
+              atual={comparativoAno.atual.conversao}
+              anterior={comparativoAno.anterior.conversao}
+              format={(v) => `${v.toFixed(1)}%`}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">Funil de vendas</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
@@ -515,6 +604,37 @@ function Dashboard() {
               ))}
           </CardContent>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+function CompareRow({
+  label,
+  atual,
+  anterior,
+  format = (v: number) => String(v),
+}: {
+  label: string;
+  atual: number;
+  anterior: number;
+  format?: (v: number) => string;
+}) {
+  const delta = anterior !== 0 ? ((atual - anterior) / anterior) * 100 : atual > 0 ? 100 : 0;
+  const positivo = delta >= 0;
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-semibold">{format(atual)}</span>
+        <span
+          className={
+            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium " +
+            (positivo ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")
+          }
+        >
+          {positivo ? "▲" : "▼"} {Math.abs(delta).toFixed(0)}%
+        </span>
       </div>
     </div>
   );

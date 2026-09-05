@@ -20,9 +20,11 @@ import {
 import { CONTACT_TYPES, OPP_STATUS, QUOTE_STATUS } from "@/lib/constants";
 import { brl } from "@/lib/format";
 import {
+  fetchCategoryGoals,
   fetchProducts,
   fetchSalesGoals,
   fetchSettings,
+  type CategoryGoal,
   type Product,
   type SalesGoal,
 } from "@/lib/api";
@@ -166,6 +168,49 @@ function SettingsPage() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["sales-goals", ano, mes] }),
+  });
+
+  const { data: categoryGoals = [] } = useQuery({
+    queryKey: ["category-goals", ano, mes],
+    queryFn: () => fetchCategoryGoals(ano, mes),
+  });
+  const [novaCategoria, setNovaCategoria] = useState("");
+  const [novaMetaCategoria, setNovaMetaCategoria] = useState("");
+
+  const saveCategoryGoal = useMutation({
+    mutationFn: async (goal: { categoria: string; meta_valor: number; id?: string }) => {
+      if (goal.id) {
+        const { error } = await supabase
+          .from("category_goals")
+          .update({ meta_valor: goal.meta_valor })
+          .eq("id", goal.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("category_goals").insert({
+          categoria: goal.categoria,
+          ano,
+          mes,
+          meta_valor: goal.meta_valor,
+          created_by: user?.id ?? null,
+        } as never);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["category-goals", ano, mes] });
+      toast.success("Meta salva.");
+      setNovaCategoria("");
+      setNovaMetaCategoria("");
+    },
+    onError: (e: Error) => toast.error("Erro: " + e.message),
+  });
+
+  const removeCategoryGoal = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("category_goals").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["category-goals", ano, mes] }),
   });
 
   useEffect(() => {
@@ -355,6 +400,65 @@ function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">Metas por categoria/produto</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {categoryGoals.length ? (
+              categoryGoals.map((g) => (
+                <CategoryGoalRow
+                  key={g.id}
+                  goal={g}
+                  admin={role === "admin"}
+                  onSave={saveCategoryGoal.mutate}
+                  onRemove={removeCategoryGoal.mutate}
+                />
+              ))
+            ) : (
+              <p className="text-muted-foreground">Nenhuma meta cadastrada para este período.</p>
+            )}
+            {role === "admin" ? (
+              <div className="flex items-end gap-2 border-t pt-3">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Categoria/produto</Label>
+                  <Input
+                    value={novaCategoria}
+                    onChange={(e) => setNovaCategoria(e.target.value)}
+                    placeholder="Ex: ETE, Dosadores, Bombas..."
+                  />
+                </div>
+                <div className="w-32 space-y-1">
+                  <Label className="text-xs">Meta (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={novaMetaCategoria}
+                    onChange={(e) => setNovaMetaCategoria(e.target.value)}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  disabled={!novaCategoria.trim() || !novaMetaCategoria}
+                  onClick={() =>
+                    saveCategoryGoal.mutate({
+                      categoria: novaCategoria.trim(),
+                      meta_valor: Number(novaMetaCategoria),
+                    })
+                  }
+                >
+                  Adicionar
+                </Button>
+              </div>
+            ) : (
+              <p className="pt-2 text-xs text-muted-foreground">
+                Somente administradores definem as metas. Use o mesmo texto de "Produto/Serviço"
+                usado nas oportunidades para o valor bater no relatório.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">Usuários e permissões</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -534,6 +638,48 @@ function GoalRow({
         </div>
       ) : (
         <span className="text-muted-foreground">{brl(goal.meta_valor)}</span>
+      )}
+    </div>
+  );
+}
+
+function CategoryGoalRow({
+  goal,
+  admin,
+  onSave,
+  onRemove,
+}: {
+  goal: CategoryGoal;
+  admin: boolean;
+  onSave: (v: { id: string; categoria: string; meta_valor: number }) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [valor, setValor] = useState(String(goal.meta_valor));
+  return (
+    <div className="flex items-center justify-between gap-2 border-b py-1.5 last:border-0">
+      <span className="min-w-0 flex-1 truncate font-medium">{goal.categoria}</span>
+      {admin ? (
+        <div className="flex shrink-0 items-center gap-1">
+          <Input
+            type="number"
+            step="0.01"
+            className="h-8 w-28 text-right text-xs"
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+            onBlur={() =>
+              onSave({ id: goal.id, categoria: goal.categoria, meta_valor: Number(valor || 0) })
+            }
+          />
+          <button
+            onClick={() => onRemove(goal.id)}
+            aria-label="Remover meta"
+            className="rounded p-1 hover:bg-muted"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          </button>
+        </div>
+      ) : (
+        <span className="shrink-0 text-muted-foreground">{brl(goal.meta_valor)}</span>
       )}
     </div>
   );

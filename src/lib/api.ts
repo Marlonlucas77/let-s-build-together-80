@@ -140,6 +140,24 @@ export async function fetchSalesGoals(ano: number, mes: number) {
   return (data ?? []) as SalesGoal[];
 }
 
+export type CategoryGoal = {
+  id: string;
+  categoria: string;
+  ano: number;
+  mes: number;
+  meta_valor: number;
+};
+
+export async function fetchCategoryGoals(ano: number, mes: number) {
+  const { data, error } = await supabase
+    .from("category_goals")
+    .select("*")
+    .eq("ano", ano)
+    .eq("mes", mes);
+  if (error) throw error;
+  return (data ?? []) as CategoryGoal[];
+}
+
 export async function fetchQuoteAttachments(quoteId: string) {
   const { data, error } = await supabase
     .from("quote_attachments")
@@ -159,6 +177,8 @@ export async function logActivity(input: {
   tipo?: string | undefined;
   descricao: string;
   usuario?: string | null | undefined;
+  status_de?: string | null | undefined;
+  status_para?: string | null | undefined;
 }) {
   const { error } = await supabase.from("activities").insert({
     opportunity_id: input.opportunity_id ?? null,
@@ -167,7 +187,9 @@ export async function logActivity(input: {
     tipo: input.tipo ?? "evento",
     descricao: input.descricao,
     usuario: input.usuario ?? null,
-  });
+    status_de: input.status_de ?? null,
+    status_para: input.status_para ?? null,
+  } as never);
   // Não relança o erro: o registro principal (orçamento/oportunidade) já foi salvo
   // com sucesso quando isso é chamado, então uma falha aqui não deve reverter a
   // tela pro usuário. Mas também não deve desaparecer sem deixar rastro.

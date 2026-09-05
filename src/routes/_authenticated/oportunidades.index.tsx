@@ -143,6 +143,7 @@ function OpportunitiesPage() {
         tipo: "criacao",
         descricao: "Oportunidade criada.",
         usuario: responsavel,
+        status_para: data.status,
       });
       return data;
     },

@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OPP_STATUS } from "@/lib/constants";
 import { brl, csvDownload } from "@/lib/format";
-import type { FollowUp, Opportunity, Quote } from "@/lib/api";
+import { fetchCategoryGoals, type FollowUp, type Opportunity, type Quote } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
@@ -47,6 +48,27 @@ function ReportsPage() {
         followups: (f.data ?? []) as FollowUp[],
       };
     },
+  });
+
+  const { data: stageEvents = [] } = useQuery({
+    queryKey: ["funnel-stage-events"],
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("activities")
+        .select("opportunity_id, status_para, created_at")
+        .not("status_para", "is", null)
+        .not("opportunity_id", "is", null)
+        .order("opportunity_id")
+        .order("created_at");
+      if (error) throw error;
+      return rows as { opportunity_id: string; status_para: string; created_at: string }[];
+    },
+  });
+
+  const now = new Date();
+  const { data: categoryGoals = [] } = useQuery({
+    queryKey: ["category-goals", now.getFullYear(), now.getMonth() + 1],
+    queryFn: () => fetchCategoryGoals(now.getFullYear(), now.getMonth() + 1),
   });
 
   const noPeriodo = useCallback(
@@ -135,6 +157,60 @@ function ReportsPage() {
       ).length,
     };
   }, [followups]);
+
+  const opsById = useMemo(() => new Map(opps.map((o) => [o.id, o])), [opps]);
+
+  const porCategoria = useMemo(() => {
+    const map = new Map<string, { valor: number; aprovados: number; orcamentos: number }>();
+    const get = (k: string) => map.get(k) ?? { valor: 0, aprovados: 0, orcamentos: 0 };
+    quotes.forEach((q) => {
+      const categoria =
+        (q.opportunity_id && opsById.get(q.opportunity_id)?.produto_servico) || "Sem categoria";
+      const v = get(categoria);
+      v.orcamentos += 1;
+      if (q.status === "aprovado") {
+        v.aprovados += 1;
+        v.valor += Number(q.total);
+      }
+      map.set(categoria, v);
+    });
+    return [...map.entries()].sort((a, b) => b[1].valor - a[1].valor);
+  }, [quotes, opsById]);
+
+  const metasCategoria = categoryGoals
+    .map((g) => ({
+      categoria: g.categoria,
+      meta: Number(g.meta_valor),
+      vendido: porCategoria.find(([k]) => k === g.categoria)?.[1].valor ?? 0,
+    }))
+    .sort((a, b) => b.meta - a.meta);
+
+  const tempoPorEtapa = useMemo(() => {
+    const porOportunidade = new Map<string, { status_para: string; created_at: string }[]>();
+    for (const ev of stageEvents) {
+      const list = porOportunidade.get(ev.opportunity_id) ?? [];
+      list.push(ev);
+      porOportunidade.set(ev.opportunity_id, list);
+    }
+    const somaMs = new Map<string, number>();
+    const contagem = new Map<string, number>();
+    for (const eventos of porOportunidade.values()) {
+      for (let i = 0; i < eventos.length - 1; i++) {
+        const atual = eventos[i]!;
+        const proximo = eventos[i + 1]!;
+        const ms = new Date(proximo.created_at).getTime() - new Date(atual.created_at).getTime();
+        if (ms < 0) continue;
+        somaMs.set(atual.status_para, (somaMs.get(atual.status_para) ?? 0) + ms);
+        contagem.set(atual.status_para, (contagem.get(atual.status_para) ?? 0) + 1);
+      }
+    }
+    return OPP_STATUS.filter((s) => contagem.has(s.value)).map((s) => ({
+      status: s.value,
+      label: s.label,
+      mediaDias: somaMs.get(s.value)! / contagem.get(s.value)! / 86400000,
+      transicoes: contagem.get(s.value)!,
+    }));
+  }, [stageEvents]);
 
   return (
     <div>
@@ -292,6 +368,72 @@ function ReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Metas por categoria/produto (mês atual)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {metasCategoria.length ? (
+              metasCategoria.map((m) => (
+                <div key={m.categoria} className="flex items-center justify-between gap-2 py-1">
+                  <span className="min-w-0 flex-1 truncate">{m.categoria}</span>
+                  <span className="shrink-0 font-medium">
+                    {brl(m.vendido)} / {brl(m.meta)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground">
+                Nenhuma meta por categoria cadastrada para este mês.
+              </p>
+            )}
+            {porCategoria.length ? (
+              <div className="border-t pt-2">
+                <p className="mb-1 text-xs uppercase text-muted-foreground">
+                  Valor vendido por categoria (sem filtro de meta)
+                </p>
+                {porCategoria.map(([k, v]) => (
+                  <div key={k} className="flex justify-between py-0.5 text-xs">
+                    <span>{k}</span>
+                    <span className="font-medium">{brl(v.valor)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Tempo médio por etapa do funil</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {tempoPorEtapa.length ? (
+              tempoPorEtapa.map((e) => (
+                <div
+                  key={e.status}
+                  className="flex items-center justify-between border-b py-1.5 last:border-0"
+                >
+                  <span>{e.label}</span>
+                  <span className="text-right">
+                    <span className="font-medium">{e.mediaDias.toFixed(1)} dias</span>
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      ({e.transicoes} {e.transicoes === 1 ? "caso" : "casos"})
+                    </span>
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground">
+                Ainda não há transições de etapa registradas suficientes para calcular. Esse
+                indicador vai se preenchendo conforme as oportunidades avançam pelo funil.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
