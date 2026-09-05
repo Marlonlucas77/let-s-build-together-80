@@ -30,7 +30,7 @@ import { brl, fmtDate } from "@/lib/format";
 import { fetchClients, fetchContacts, logActivity, type Opportunity } from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
 
-export const Route = createFileRoute("/_authenticated/oportunidades")({
+export const Route = createFileRoute("/_authenticated/oportunidades/")({
   head: () => ({
     meta: [
       { title: "Oportunidades | EQSAN Comercial" },
