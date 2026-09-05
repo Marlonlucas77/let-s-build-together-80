@@ -36,7 +36,7 @@ import {
 } from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
 
-type Search = { nova?: string };
+type Search = { nova?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated/orcamentos")({
   validateSearch: (search: Record<string, unknown>): Search => ({

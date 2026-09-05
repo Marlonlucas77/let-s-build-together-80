@@ -96,12 +96,12 @@ export type FollowUp = {
 };
 
 export async function logActivity(input: {
-  opportunity_id?: string | null;
-  quote_id?: string | null;
-  client_id?: string | null;
-  tipo?: string;
+  opportunity_id?: string | null | undefined;
+  quote_id?: string | null | undefined;
+  client_id?: string | null | undefined;
+  tipo?: string | undefined;
   descricao: string;
-  usuario?: string | null;
+  usuario?: string | null | undefined;
 }) {
   await supabase.from("activities").insert({
     opportunity_id: input.opportunity_id ?? null,
