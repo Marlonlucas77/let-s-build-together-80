@@ -103,7 +103,7 @@ export async function logActivity(input: {
   descricao: string;
   usuario?: string | null | undefined;
 }) {
-  await supabase.from("activities").insert({
+  const { error } = await supabase.from("activities").insert({
     opportunity_id: input.opportunity_id ?? null,
     quote_id: input.quote_id ?? null,
     client_id: input.client_id ?? null,
@@ -111,6 +111,10 @@ export async function logActivity(input: {
     descricao: input.descricao,
     usuario: input.usuario ?? null,
   });
+  // Não relança o erro: o registro principal (orçamento/oportunidade) já foi salvo
+  // com sucesso quando isso é chamado, então uma falha aqui não deve reverter a
+  // tela pro usuário. Mas também não deve desaparecer sem deixar rastro.
+  if (error) console.error("[logActivity] falha ao registrar atividade:", error);
 }
 
 export async function fetchClients() {

@@ -114,10 +114,10 @@ function QuoteDetail() {
   const quote = data?.quote;
   const items = data?.items ?? [];
 
-  async function recalcTotals() {
+  async function recalcTotals(descontoOverride?: number) {
     const { data: rows } = await supabase.from("quote_items").select("total").eq("quote_id", id);
     const subtotal = (rows ?? []).reduce((s, r) => s + Number(r.total), 0);
-    const desconto = Number(quote?.desconto ?? 0);
+    const desconto = Number(descontoOverride ?? quote?.desconto ?? 0);
     await supabase
       .from("quotes")
       .update({ subtotal, total: Math.max(0, subtotal - desconto) })
@@ -131,7 +131,9 @@ function QuoteDetail() {
         .update(payload as never)
         .eq("id", id);
       if (error) throw error;
-      if (payload.desconto !== undefined) await recalcTotals();
+      // Usa o desconto recém-enviado (payload), não o valor antigo ainda em cache,
+      // senão o total é recalculado com o desconto anterior.
+      if (payload.desconto !== undefined) await recalcTotals(payload.desconto);
     },
     onSuccess: () => {
       qc.invalidateQueries();
