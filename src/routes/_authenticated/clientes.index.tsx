@@ -30,7 +30,7 @@ import {
 import { fetchClients, type Client } from "@/lib/api";
 import { maskCNPJ, validCNPJ, validEmail, onlyDigits } from "@/lib/format";
 
-export const Route = createFileRoute("/_authenticated/clientes")({
+export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({
     meta: [
       { title: "Clientes | EQSAN Comercial" },

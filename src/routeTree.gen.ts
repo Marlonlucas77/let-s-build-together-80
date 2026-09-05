@@ -12,17 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFollowupsRouteImport } from './routes/_authenticated/followups'
 import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated/kanban'
-import { Route as AuthenticatedOportunidadesRouteImport } from './routes/_authenticated/oportunidades'
-import { Route as AuthenticatedOrcamentosRouteImport } from './routes/_authenticated/orcamentos'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as PropostaIdRouteImport } from './routes/proposta.$id'
+import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
+import { Route as AuthenticatedOportunidadesIndexRouteImport } from './routes/_authenticated/oportunidades.index'
 import { Route as AuthenticatedOportunidadesIdRouteImport } from './routes/_authenticated/oportunidades.$id'
+import { Route as AuthenticatedOrcamentosIndexRouteImport } from './routes/_authenticated/orcamentos.index'
 import { Route as AuthenticatedOrcamentosIdRouteImport } from './routes/_authenticated/orcamentos.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -38,11 +38,6 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
-  id: '/clientes',
-  path: '/clientes',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
@@ -65,17 +60,6 @@ const AuthenticatedKanbanRoute = AuthenticatedKanbanRouteImport.update({
   path: '/kanban',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedOportunidadesRoute =
-  AuthenticatedOportunidadesRouteImport.update({
-    id: '/oportunidades',
-    path: '/oportunidades',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOrcamentosRoute = AuthenticatedOrcamentosRouteImport.update({
-  id: '/orcamentos',
-  path: '/orcamentos',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -86,124 +70,142 @@ const PropostaIdRoute = PropostaIdRouteImport.update({
   path: '/proposta/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedClientesIndexRoute =
+  AuthenticatedClientesIndexRouteImport.update({
+    id: '/clientes/',
+    path: '/clientes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedClientesRoute,
+  id: '/clientes/$id',
+  path: '/clientes/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOportunidadesIndexRoute =
+  AuthenticatedOportunidadesIndexRouteImport.update({
+    id: '/oportunidades/',
+    path: '/oportunidades/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOportunidadesIdRoute =
   AuthenticatedOportunidadesIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedOportunidadesRoute,
+    id: '/oportunidades/$id',
+    path: '/oportunidades/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrcamentosIndexRoute =
+  AuthenticatedOrcamentosIndexRouteImport.update({
+    id: '/orcamentos/',
+    path: '/orcamentos/',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOrcamentosIdRoute =
   AuthenticatedOrcamentosIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedOrcamentosRoute,
+    id: '/orcamentos/$id',
+    path: '/orcamentos/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/followups': typeof AuthenticatedFollowupsRoute
   '/kanban': typeof AuthenticatedKanbanRoute
-  '/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
-  '/orcamentos': typeof AuthenticatedOrcamentosRouteWithChildren
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/proposta/$id': typeof PropostaIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
   '/orcamentos/$id': typeof AuthenticatedOrcamentosIdRoute
+  '/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/oportunidades/': typeof AuthenticatedOportunidadesIndexRoute
+  '/orcamentos/': typeof AuthenticatedOrcamentosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/followups': typeof AuthenticatedFollowupsRoute
   '/kanban': typeof AuthenticatedKanbanRoute
-  '/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
-  '/orcamentos': typeof AuthenticatedOrcamentosRouteWithChildren
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/proposta/$id': typeof PropostaIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
   '/orcamentos/$id': typeof AuthenticatedOrcamentosIdRoute
+  '/clientes': typeof AuthenticatedClientesIndexRoute
+  '/oportunidades': typeof AuthenticatedOportunidadesIndexRoute
+  '/orcamentos': typeof AuthenticatedOrcamentosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/followups': typeof AuthenticatedFollowupsRoute
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
-  '/_authenticated/oportunidades': typeof AuthenticatedOportunidadesRouteWithChildren
-  '/_authenticated/orcamentos': typeof AuthenticatedOrcamentosRouteWithChildren
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/proposta/$id': typeof PropostaIdRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
   '/_authenticated/oportunidades/$id': typeof AuthenticatedOportunidadesIdRoute
   '/_authenticated/orcamentos/$id': typeof AuthenticatedOrcamentosIdRoute
+  '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/_authenticated/oportunidades/': typeof AuthenticatedOportunidadesIndexRoute
+  '/_authenticated/orcamentos/': typeof AuthenticatedOrcamentosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
-    | '/clientes'
     | '/configuracoes'
     | '/dashboard'
     | '/followups'
     | '/kanban'
-    | '/oportunidades'
-    | '/orcamentos'
     | '/relatorios'
     | '/proposta/$id'
     | '/clientes/$id'
     | '/oportunidades/$id'
     | '/orcamentos/$id'
+    | '/clientes/'
+    | '/oportunidades/'
+    | '/orcamentos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/clientes'
     | '/configuracoes'
     | '/dashboard'
     | '/followups'
     | '/kanban'
-    | '/oportunidades'
-    | '/orcamentos'
     | '/relatorios'
     | '/proposta/$id'
     | '/clientes/$id'
     | '/oportunidades/$id'
     | '/orcamentos/$id'
+    | '/clientes'
+    | '/oportunidades'
+    | '/orcamentos'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/clientes'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/followups'
     | '/_authenticated/kanban'
-    | '/_authenticated/oportunidades'
-    | '/_authenticated/orcamentos'
     | '/_authenticated/relatorios'
     | '/proposta/$id'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/oportunidades/$id'
     | '/_authenticated/orcamentos/$id'
+    | '/_authenticated/clientes/'
+    | '/_authenticated/oportunidades/'
+    | '/_authenticated/orcamentos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -236,13 +238,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/clientes': {
-      id: '/_authenticated/clientes'
-      path: '/clientes'
-      fullPath: '/clientes'
-      preLoaderRoute: typeof AuthenticatedClientesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/configuracoes': {
       id: '/_authenticated/configuracoes'
       path: '/configuracoes'
@@ -271,20 +266,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKanbanRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/oportunidades': {
-      id: '/_authenticated/oportunidades'
-      path: '/oportunidades'
-      fullPath: '/oportunidades'
-      preLoaderRoute: typeof AuthenticatedOportunidadesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/orcamentos': {
-      id: '/_authenticated/orcamentos'
-      path: '/orcamentos'
-      fullPath: '/orcamentos'
-      preLoaderRoute: typeof AuthenticatedOrcamentosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/relatorios': {
       id: '/_authenticated/relatorios'
       path: '/relatorios'
@@ -299,91 +280,77 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropostaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/clientes/': {
+      id: '/_authenticated/clientes/'
+      path: '/clientes'
+      fullPath: '/clientes/'
+      preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clientes/$id': {
       id: '/_authenticated/clientes/$id'
-      path: '/$id'
+      path: '/clientes/$id'
       fullPath: '/clientes/$id'
       preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
-      parentRoute: typeof AuthenticatedClientesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/oportunidades/': {
+      id: '/_authenticated/oportunidades/'
+      path: '/oportunidades'
+      fullPath: '/oportunidades/'
+      preLoaderRoute: typeof AuthenticatedOportunidadesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/oportunidades/$id': {
       id: '/_authenticated/oportunidades/$id'
-      path: '/$id'
+      path: '/oportunidades/$id'
       fullPath: '/oportunidades/$id'
       preLoaderRoute: typeof AuthenticatedOportunidadesIdRouteImport
-      parentRoute: typeof AuthenticatedOportunidadesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/orcamentos/': {
+      id: '/_authenticated/orcamentos/'
+      path: '/orcamentos'
+      fullPath: '/orcamentos/'
+      preLoaderRoute: typeof AuthenticatedOrcamentosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/orcamentos/$id': {
       id: '/_authenticated/orcamentos/$id'
-      path: '/$id'
+      path: '/orcamentos/$id'
       fullPath: '/orcamentos/$id'
       preLoaderRoute: typeof AuthenticatedOrcamentosIdRouteImport
-      parentRoute: typeof AuthenticatedOrcamentosRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedClientesRouteChildren {
-  AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRoute
-}
-
-const AuthenticatedClientesRouteChildren: AuthenticatedClientesRouteChildren = {
-  AuthenticatedClientesIdRoute: AuthenticatedClientesIdRoute,
-}
-
-const AuthenticatedClientesRouteWithChildren =
-  AuthenticatedClientesRoute._addFileChildren(
-    AuthenticatedClientesRouteChildren,
-  )
-
-interface AuthenticatedOportunidadesRouteChildren {
-  AuthenticatedOportunidadesIdRoute: typeof AuthenticatedOportunidadesIdRoute
-}
-
-const AuthenticatedOportunidadesRouteChildren: AuthenticatedOportunidadesRouteChildren =
-  {
-    AuthenticatedOportunidadesIdRoute: AuthenticatedOportunidadesIdRoute,
-  }
-
-const AuthenticatedOportunidadesRouteWithChildren =
-  AuthenticatedOportunidadesRoute._addFileChildren(
-    AuthenticatedOportunidadesRouteChildren,
-  )
-
-interface AuthenticatedOrcamentosRouteChildren {
-  AuthenticatedOrcamentosIdRoute: typeof AuthenticatedOrcamentosIdRoute
-}
-
-const AuthenticatedOrcamentosRouteChildren: AuthenticatedOrcamentosRouteChildren =
-  {
-    AuthenticatedOrcamentosIdRoute: AuthenticatedOrcamentosIdRoute,
-  }
-
-const AuthenticatedOrcamentosRouteWithChildren =
-  AuthenticatedOrcamentosRoute._addFileChildren(
-    AuthenticatedOrcamentosRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedClientesRoute: typeof AuthenticatedClientesRouteWithChildren
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFollowupsRoute: typeof AuthenticatedFollowupsRoute
   AuthenticatedKanbanRoute: typeof AuthenticatedKanbanRoute
-  AuthenticatedOportunidadesRoute: typeof AuthenticatedOportunidadesRouteWithChildren
-  AuthenticatedOrcamentosRoute: typeof AuthenticatedOrcamentosRouteWithChildren
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRoute
+  AuthenticatedOportunidadesIdRoute: typeof AuthenticatedOportunidadesIdRoute
+  AuthenticatedOrcamentosIdRoute: typeof AuthenticatedOrcamentosIdRoute
+  AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
+  AuthenticatedOportunidadesIndexRoute: typeof AuthenticatedOportunidadesIndexRoute
+  AuthenticatedOrcamentosIndexRoute: typeof AuthenticatedOrcamentosIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedClientesRoute: AuthenticatedClientesRouteWithChildren,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFollowupsRoute: AuthenticatedFollowupsRoute,
   AuthenticatedKanbanRoute: AuthenticatedKanbanRoute,
-  AuthenticatedOportunidadesRoute: AuthenticatedOportunidadesRouteWithChildren,
-  AuthenticatedOrcamentosRoute: AuthenticatedOrcamentosRouteWithChildren,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedClientesIdRoute: AuthenticatedClientesIdRoute,
+  AuthenticatedOportunidadesIdRoute: AuthenticatedOportunidadesIdRoute,
+  AuthenticatedOrcamentosIdRoute: AuthenticatedOrcamentosIdRoute,
+  AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
+  AuthenticatedOportunidadesIndexRoute: AuthenticatedOportunidadesIndexRoute,
+  AuthenticatedOrcamentosIndexRoute: AuthenticatedOrcamentosIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
