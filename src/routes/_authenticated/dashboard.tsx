@@ -68,7 +68,7 @@ function Kpi({
     <Card>
       <CardContent className="flex items-center justify-between gap-3 p-5">
         <div className="min-w-0">
-          <p className="truncate text-sm text-muted-foreground">{title}</p>
+          <p className="text-sm leading-tight text-muted-foreground">{title}</p>
           <p
             className={
               "mt-1 text-2xl font-semibold " +
@@ -259,7 +259,7 @@ function Dashboard() {
             {porStatus.length ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={porStatus} dataKey="value" nameKey="name" outerRadius={90} label>
+                  <Pie data={porStatus} dataKey="value" nameKey="name" outerRadius={90} label isAnimationActive={false}>
                     {porStatus.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
