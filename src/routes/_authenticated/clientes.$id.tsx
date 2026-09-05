@@ -314,9 +314,9 @@ function ClientDetail() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!contact.nome || contact.nome.trim().length < 2)
-                return toast.error("Informe o nome do contato.");
+                { toast.error("Informe o nome do contato."); return; }
               if (contact.email && !validEmail(contact.email))
-                return toast.error("E-mail inválido.");
+                { toast.error("E-mail inválido."); return; }
               saveContact.mutate(contact);
             }}
           >
@@ -379,7 +379,7 @@ function ClientDetail() {
   );
 }
 
-function Info({ label, value }: { label: string; value?: string | null }) {
+function Info({ label, value }: { label: string; value?: string | null | undefined }) {
   return (
     <div className="flex justify-between gap-4">
       <span className="text-muted-foreground">{label}</span>

@@ -36,7 +36,7 @@ import {
 } from "@/lib/api";
 import { useAuth, userName } from "@/hooks/useAuth";
 
-type Search = { nova?: string };
+type Search = { nova?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated/orcamentos")({
   validateSearch: (search: Record<string, unknown>): Search => ({
@@ -310,7 +310,7 @@ function QuotesPage() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!form["client_id"]) return toast.error("Selecione o cliente.");
+              if (!form["client_id"]) { toast.error("Selecione o cliente."); return; }
               create.mutate();
             }}
           >

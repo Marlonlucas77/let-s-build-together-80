@@ -335,7 +335,7 @@ function OpportunityDetail() {
   );
 }
 
-function Info({ label, value }: { label: string; value?: string | null }) {
+function Info({ label, value }: { label: string; value?: string | null | undefined }) {
   return (
     <div className="flex justify-between gap-4 border-b py-1.5 last:border-0">
       <span className="text-muted-foreground">{label}</span>

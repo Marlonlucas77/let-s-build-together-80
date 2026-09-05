@@ -221,8 +221,8 @@ function OpportunitiesPage() {
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!form["client_id"]) return toast.error("Selecione o cliente.");
-              if (!form["titulo"]) return toast.error("Informe o título.");
+              if (!form["client_id"]) { toast.error("Selecione o cliente."); return; }
+              if (!form["titulo"]) { toast.error("Informe o título."); return; }
               create.mutate();
             }}
           >
